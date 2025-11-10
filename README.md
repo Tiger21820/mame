@@ -1,4 +1,4 @@
-# MAME!
+# MAME
 
 ## What is MAME?
 
