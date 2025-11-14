@@ -273,6 +273,7 @@ void apple2_state::machine_start()
 	m_cassette_state = 0;
 	m_cassette->output(-1.0f);
 	m_upperbank.select(0);
+	m_inh_slot = -1;
 	m_inh_bank = 0;
 	m_strobe = 0;
 	m_transchar = 0;
@@ -319,16 +320,9 @@ void apple2_state::machine_start()
 
 void apple2_state::machine_reset()
 {
-	m_inh_slot = 0;
+	// m_inh_slot is not reset here since bootable cards may want to override the monitor
 	m_cnxx_slot = -1;
 	m_anykeydown = false;
-
-	// reset the cards
-	m_a2bus->reset_bus();
-	// reset the 6502 now as a card may have pulled /INH on the reset vector
-	logerror("machine_reset\n");
-	m_maincpu->set_input_line(INPUT_LINE_RESET, ASSERT_LINE);
-	m_maincpu->set_input_line(INPUT_LINE_RESET, CLEAR_LINE);
 }
 
 /***************************************************************************
@@ -1101,7 +1095,7 @@ static INPUT_PORTS_START( apple2 )
 	PORT_INCLUDE(apple2_common)
 
 	PORT_START("keyb_repeat")
-	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_KEYBOARD) PORT_NAME("Rept")         PORT_CODE(KEYCODE_BACKSLASH) PORT_CHAR('\\')
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_KEYBOARD) PORT_NAME("Rept")         PORT_CODE(KEYCODE_BACKSLASH)
 
 	PORT_INCLUDE(apple2_sysconfig)
 INPUT_PORTS_END
