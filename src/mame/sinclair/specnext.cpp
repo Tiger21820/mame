@@ -3068,18 +3068,18 @@ INPUT_PORTS_START(specnext)
 	PORT_BIT(0x02, IP_ACTIVE_HIGH, IPT_OTHER) PORT_NAME("NMI DivMMC") PORT_CODE(KEYCODE_F11) PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(specnext_state::on_divmmc_nmi), 0)
 
 	PORT_START("LYRS")
-	PORT_DIPNAME( 0x08, 0x00, "No Sprites" ) PORT_DIPLOCATION("LYRS:4")
-	PORT_DIPSETTING(    0x00, DEF_STR(Off))
-	PORT_DIPSETTING(    0x08, DEF_STR(On))
-	PORT_DIPNAME( 0x04, 0x00, "No Layer2" ) PORT_DIPLOCATION("LYRS:5")
-	PORT_DIPSETTING(    0x00, DEF_STR(Off))
-	PORT_DIPSETTING(    0x04, DEF_STR(On))
-	PORT_DIPNAME( 0x02, 0x00, "No ULA/LoRes" ) PORT_DIPLOCATION("LYRS:6")
-	PORT_DIPSETTING(    0x00, DEF_STR(Off))
-	PORT_DIPSETTING(    0x02, DEF_STR(On))
-	PORT_DIPNAME( 0x01, 0x00, "No Tiles" ) PORT_DIPLOCATION("LYRS:7")
-	PORT_DIPSETTING(    0x00, DEF_STR(Off))
-	PORT_DIPSETTING(    0x01, DEF_STR(On))
+	PORT_CONFNAME(0x08, 0x00, "Disable Sprites")
+	PORT_CONFSETTING(   0x00, DEF_STR(Off))
+	PORT_CONFSETTING(   0x08, DEF_STR(On))
+	PORT_CONFNAME(0x04, 0x00, "Disable Layer2")
+	PORT_CONFSETTING(   0x00, DEF_STR(Off))
+	PORT_CONFSETTING(   0x04, DEF_STR(On))
+	PORT_CONFNAME(0x02, 0x00, "Disable ULA/LoRes")
+	PORT_CONFSETTING(   0x00, DEF_STR(Off))
+	PORT_CONFSETTING(   0x02, DEF_STR(On))
+	PORT_CONFNAME(0x01, 0x00, "Disable Tiles")
+	PORT_CONFSETTING(   0x00, DEF_STR(Off))
+	PORT_CONFSETTING(   0x01, DEF_STR(On))
 
 INPUT_PORTS_END
 
@@ -3750,8 +3750,8 @@ void specnext_state::tbblue(machine_config &config)
 	m_maincpu->set_io_map(&specnext_state::map_io);
 	m_maincpu->set_vblank_int("screen", FUNC(specnext_state::specnext_interrupt));
 	m_maincpu->set_irq_acknowledge_callback(NAME([](device_t &, int){ return 0xff; }));
-	m_maincpu->out_nextreg_cb().set(FUNC(specnext_state::reg_w));
-	m_maincpu->in_nextreg_cb().set(FUNC(specnext_state::reg_r));
+	m_maincpu->out_nextreg_cb().set([this](offs_t offset, u8 data) { m_next_regs.write_byte(offset, data); });
+	m_maincpu->in_nextreg_cb().set([this](offs_t offset) { return m_next_regs.read_byte(offset); });
 	m_maincpu->out_retn_seen_cb().set(FUNC(specnext_state::leave_nmi));
 	m_maincpu->busack_cb().set(m_dma, FUNC(specnext_dma_device::bai_w));
 
@@ -3826,7 +3826,7 @@ void specnext_state::tbblue(machine_config &config)
 	SPECNEXT_SPRITES(config, m_sprites, 0).set_palette(m_palette->device().tag(), 0x600, 0x700);
 
 	SPECNEXT_COPPER(config, m_copper, 28_MHz_XTAL);
-	m_copper->out_nextreg_cb().set(FUNC(specnext_state::reg_w));
+	m_copper->out_nextreg_cb().set([this](offs_t offset, u8 data) { m_next_regs.write_byte(offset, data); });
 	m_copper->set_in_until_pos_cb(FUNC(specnext_state::copper_until_pos_r));
 
 	config.device_remove("snapshot");
