@@ -147,6 +147,7 @@ protected:
 	u8 m_driveio_comm_data = 0;
 	int m_iop_write_num = 0;
 	u32 m_iop_data = 0;
+	emu_timer *m_irq_delay_timer;
 
 	u32 m_geo_read_start_address = 0;
 	u32 m_geo_write_start_address = 0;
@@ -227,6 +228,7 @@ protected:
 	void sound_ready_w(int state);
 	template <int TNum> TIMER_DEVICE_CALLBACK_MEMBER(model2_timer_cb);
 	void scsp_irq(offs_t offset, u8 data);
+	TIMER_CALLBACK_MEMBER(check_sound_irq);
 
 	void render_frame_start();
 	void geo_parse();
@@ -441,6 +443,7 @@ class model2o_gtx_state : public model2o_state
 public:
 	model2o_gtx_state(const machine_config &mconfig, device_type type, const char *tag)
 		: model2o_state(mconfig, type, tag)
+		, m_prot_data(*this, "prot_data")
 	{}
 
 	void daytona_gtx(machine_config &config);
@@ -449,6 +452,7 @@ protected:
 	virtual void machine_reset() override ATTR_COLD;
 
 private:
+	required_region_ptr<u32> m_prot_data;
 	int m_gtx_state = 0;
 
 	u8 gtx_r(offs_t offset);
