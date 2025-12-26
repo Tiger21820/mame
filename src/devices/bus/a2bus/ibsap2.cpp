@@ -4,10 +4,13 @@
 
     IBS Computertechnik AP 2 Serial Interface
 
-    This V.24/RS-232-C interface is nearly a functional copy of the
-    Apple Super Serial Card, but is only partially compatible. The
-    firmware only recognizes two input mode commands: ESC L for
-    lowercase mode and ESC U for uppercase mode.
+    This V.24/RS-232-C interface card, released around 1981, is
+    nearly equivalent to Apple's Serial Interface Card in firmware
+    features and switch settings, though it uses a 6551 ACIA like
+    the later Super Serial Card.
+
+    The firmware only recognizes two commands in input mode: ESC L
+    for lowercase mode and ESC U for uppercase mode.
 
 **********************************************************************/
 
@@ -26,13 +29,13 @@ public:
 	ibsap2_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock);
 
 protected:
-	// device-level overrides
+	// device_t implementation
 	virtual void device_start() override ATTR_COLD;
 	virtual ioport_constructor device_input_ports() const override ATTR_COLD;
 	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
 	virtual const tiny_rom_entry *device_rom_region() const override ATTR_COLD;
 
-	// device_a2bus_card_interface overrides
+	// device_a2bus_card_interface implementation
 	virtual u8 read_c0nx(u8 offset) override;
 	virtual void write_c0nx(u8 offset, u8 data) override;
 	virtual u8 read_cnxx(u8 offset) override;
