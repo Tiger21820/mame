@@ -1,5 +1,5 @@
 // license: BSD-3-Clause
-// copyright-holders: Angelo Salese, superctr
+// copyright-holders: Angelo Salese, superctr, Nathan Misner
 
 #ifndef MAME_BUS_MEGADRIVE_CART_SEGACH_H
 #define MAME_BUS_MEGADRIVE_CART_SEGACH_H
@@ -7,8 +7,9 @@
 #pragma once
 
 #include "slot.h"
-#include "machine/timer.h"
+
 #include "imagedev/snapquik.h"
+#include "machine/timer.h"
 
 class megadrive_segach_jp_device : public device_t,
 								   public device_megadrive_cart_interface
