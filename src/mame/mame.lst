@@ -1778,6 +1778,7 @@ marble3
 marble4
 marble5
 peterpak
+reliefs1
 roadblst
 roadblst1
 roadblst2
@@ -16330,6 +16331,10 @@ cz101
 @source:casio/cz230s.cpp
 cz230s
 sz1
+
+@source:casio/dg20.cpp
+dg10
+dg20
 
 @source:casio/fp200.cpp
 fp200
@@ -37326,6 +37331,9 @@ toptek286
 tot3200sxc
 tower386sx
 towerat2xx
+ts30a
+ts30as
+ts30at
 ts34t25
 twinnet
 u3911v3

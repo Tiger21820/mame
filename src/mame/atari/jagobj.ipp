@@ -430,7 +430,7 @@ uint32_t jaguar_state::process_bitmap(uint16_t *scanline, uint32_t *objdata, int
 		// easy to fix, need use cases
 		// rayman & ultravor on transitions
 		//if (iwidth == 0)
-		//	popmessage("jagobj.ipp: iwidth == 0!");
+		//  popmessage("jagobj.ipp: iwidth == 0!");
 
 		/* switch off the depth */
 		switch (depthlog)
@@ -507,7 +507,7 @@ uint32_t jaguar_state::process_bitmap(uint16_t *scanline, uint32_t *objdata, int
 			case 2:
 				/* only handle pitch=1 for now */
 				if (pitch != 1)
-					logerror("Unhandled pitch = %d\n", pitch);
+					logerror("Unhandled pitch = %d at 4bpp\n", pitch);
 				xpos += firstpix * dxpos;
 
 				(this->*bitmap4[flags])(scanline, firstpix, iwidth, src, xpos, (uint16_t *)&m_gpu_clut[0] + (_index & 0xf8));
@@ -517,7 +517,7 @@ uint32_t jaguar_state::process_bitmap(uint16_t *scanline, uint32_t *objdata, int
 			case 3:
 				/* only handle pitch=1 for now */
 				if (pitch != 1)
-					logerror("Unhandled pitch = %d\n", pitch);
+					logerror("Unhandled pitch = %d at 8bpp\n", pitch);
 				xpos += firstpix * dxpos;
 
 				(this->*bitmap8[flags])(scanline, firstpix, iwidth, src, xpos, (uint16_t *)&m_gpu_clut[0]);
@@ -577,7 +577,7 @@ uint32_t jaguar_state::process_bitmap(uint16_t *scanline, uint32_t *objdata, int
 								scanline[xpos + 0] = pix >> 16;
 								scanline[xpos + 1] = pix & 0xffff;
 								//else
-								//	BLEND(scanline[xpos], pix);
+								//  BLEND(scanline[xpos], pix);
 							}
 
 							xpos += dxpos * 2;
@@ -669,15 +669,6 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 		int dxpos = (flags & 1) ? -1 : 1;
 		int xpix = firstpix, yinc;
 
-		/* only handle pitch=1 (sequential data) for now */
-		if (pitch != 1)
-			logerror("Unhandled pitch = %d\n", pitch);
-		if (flags & 2)
-		{
-			osd_printf_debug("Unhandled blend mode in scaled bitmap case\n");
-			logerror("Unhandled blend mode in scaled bitmap case\n");
-		}
-
 		/* preadjust for firstpix */
 		xpos += firstpix * dxpos;
 
@@ -690,6 +681,12 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 				// 1bpp
 				case 0:
 				{
+					/* only handle pitch=1 (sequential data) for now */
+					if (pitch != 1)
+						logerror("Unhandled pitch = %d in 1bpp scaled bitmap\n", pitch);
+					if (flags & 2)
+						logerror("Unhandled blend mode in 1bpp scaled bitmap\n");
+
 					uint16_t *clut = (uint16_t *)&m_gpu_clut[0] + _index;
 
 					/* render in phrases */
@@ -713,6 +710,12 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 				// 2bpp
 				case 1:
 				{
+					/* only handle pitch=1 (sequential data) for now */
+					if (pitch != 1)
+						logerror("Unhandled pitch = %d in 2bpp scaled mode\n", pitch);
+					if (flags & 2)
+						logerror("Unhandled blend mode in 2bpp scaled bitmap\n");
+
 					uint16_t *clut = (uint16_t *)&m_gpu_clut[0] + (_index & 0xfc);
 
 					/* render in phrases */
@@ -736,6 +739,12 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 				// 4bpp
 				case 2:
 				{
+					/* only handle pitch=1 (sequential data) for now */
+					if (pitch != 1)
+						logerror("Unhandled pitch = %d in 4bpp scaled mode\n", pitch);
+					if (flags & 2)
+						logerror("Unhandled blend mode in 4bpp scaled bitmap\n");
+
 					uint16_t *clut = (uint16_t *)&m_gpu_clut[0] + (_index & 0xf8);
 
 					/* render in phrases */
@@ -759,17 +768,23 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 				// 8bpp
 				case 3:
 				{
+					if (flags & 2)
+						logerror("Unhandled blend mode in 8bpp scaled bitmap\n");
+
 					uint16_t *clut = (uint16_t *)&m_gpu_clut[0];
 
 					/* render in phrases */
 					while (xpix < iwidth)
 					{
-						uint16_t pix = (src[xpix >> 2] >> ((~xpix & 3) << 3)) & 0xff;
+						// - pitch on mutntpng title screen
+						uint16_t pix = (src[(xpix >> 2) * pitch] >> ((~xpix & 3) << 3)) & 0xff;
 
 						while (xleft > 0)
 						{
 							if (xpos >= 0 && xpos < 760 && (pix || !(flags & 4)))
+							{
 								scanline[xpos] = clut[BYTE_XOR_BE(pix)];
+							}
 							xpos += dxpos;
 							xleft -= 0x20;
 						}
@@ -781,6 +796,11 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 
 				// 16bpp
 				case 4:
+				{
+					/* only handle pitch=1 (sequential data) for now */
+					if (pitch != 1)
+						logerror("Unhandled pitch = %d in 16bpp scaled mode\n", pitch);
+
 					while (xpix < iwidth)
 					{
 						uint16_t pix = src[xpix >> 1] >> ((~xpix & 1) << 4);
@@ -788,7 +808,13 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 						while (xleft > 0)
 						{
 							if (xpos >= 0 && xpos < 760 && (pix || !(flags & 4)))
-								scanline[xpos] = pix;
+							{
+								// - blending in phase0 main menu (pillar at center)
+								if (!(flags & 2))
+									scanline[xpos] = pix;
+								else
+									BLEND(scanline[xpos], pix);
+							}
 							xpos += dxpos;
 							xleft -= 0x20;
 						}
@@ -796,6 +822,7 @@ uint32_t jaguar_state::process_scaled_bitmap(uint16_t *scanline, uint32_t *objda
 							xleft += hscale, xpix++;
 					}
 					break;
+				}
 
 				default:
 					fprintf(stderr, "Unhandled scaled bitmap source depth = %d\n", depthlog);
@@ -898,14 +925,18 @@ void jaguar_state::process_object_list(int vc, uint16_t *scanline)
 {
 	int done = 0, count = 0;
 	uint32_t *objdata;
-	int x;
 
 	/* erase the scanline first */
-	for (x = 0; x < 760; x++)
+	for (int x = 0; x < 760; x++)
 		scanline[x] = m_gpu_regs[BG];
 
 	/* fetch the object pointer */
 	u32 object_pointer = ((m_gpu_regs[OLP_H] << 16) | m_gpu_regs[OLP_L]);
+
+	// HACK: avoid a potential crash in raiden after Atari logo
+	// Where it's clearly not expecting the object processor running, sets $0 minus 8 = $ffff'fff8
+	if (BIT(object_pointer, 31))
+		return;
 
 	// TODO: count == 200 is wrong juju, particularly with branches
 	// - raiden hits 115 ~ 137 objects on ranking screen
@@ -935,12 +966,13 @@ void jaguar_state::process_object_list(int vc, uint16_t *scanline)
 			case 2:
 				LOGMASKED(LOG_OBJECTS, "%08x: GPU irq = %08X-%08X\n", object_pointer, objdata[0], objdata[1]);
 
-				m_gpu_regs[OB_HH] = (objdata[1] & 0xffff0000) >> 16;
-				m_gpu_regs[OB_HL] = objdata[1] & 0xffff;
-				m_gpu_regs[OB_LH] = (objdata[0] & 0xffff0000) >> 16;
-				m_gpu_regs[OB_LL] = objdata[0] & 0xffff;
-
-				// TODO: trigger timing
+				// kasumi wants the format to be like this (cfr. GPU lv3 irq service, with the rorq $10)
+				// Object processor seems to run with swapped endianness
+				m_gpu_regs[OB_HL] = (objdata[1] & 0xffff0000) >> 16;
+				m_gpu_regs[OB_HH] = objdata[1] & 0xffff;
+				m_gpu_regs[OB_LL] = (objdata[0] & 0xffff0000) >> 16;
+				m_gpu_regs[OB_LH] = objdata[0] & 0xffff;
+				// TODO: trigger timing, should also suspend processing thru OBF
 				m_gpu->set_input_line(3, ASSERT_LINE);
 				done = 1;
 				// mutntpng, atarikrt VPOS = 0
@@ -957,10 +989,10 @@ void jaguar_state::process_object_list(int vc, uint16_t *scanline)
 			/* stop */
 			case 4:
 			{
-				m_gpu_regs[OB_HH] = (objdata[1] & 0xffff0000) >> 16;
-				m_gpu_regs[OB_HL] = objdata[1] & 0xffff;
-				m_gpu_regs[OB_LH] = (objdata[0] & 0xffff0000) >> 16;
-				m_gpu_regs[OB_LL] = objdata[0] & 0xffff;
+				m_gpu_regs[OB_HL] = (objdata[1] & 0xffff0000) >> 16;
+				m_gpu_regs[OB_HH] = objdata[1] & 0xffff;
+				m_gpu_regs[OB_LL] = (objdata[0] & 0xffff0000) >> 16;
+				m_gpu_regs[OB_LH] = objdata[0] & 0xffff;
 
 				int interrupt = (objdata[1] >> 3) & 1;
 				done = 1;
@@ -1005,7 +1037,7 @@ void jaguar_state::process_object_list(int vc, uint16_t *scanline)
 	// saving our current pointer partially fixes valdiser flickering at the expense of ttoonadv ...
 	//if (!done)
 	//{
-	//	m_gpu_regs[OLP_H] = object_pointer >> 16;
-	//	m_gpu_regs[OLP_L] = object_pointer & 0xffff;
+	//  m_gpu_regs[OLP_H] = object_pointer >> 16;
+	//  m_gpu_regs[OLP_L] = object_pointer & 0xffff;
 	//}
 }

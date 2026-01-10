@@ -111,6 +111,7 @@ inline void jaguar_cpu_device::WRITELONG(offs_t a, u32 v)
 {
 	// protect/protctse wants proper alignment for Tom writes at PC=f03004
 	// (wants to reprogram border color registers, would otherwise hit VMODE)
+
 	// Other stuff tries to do unaligned R/Ws which contradicts this, namely:
 	// - atarikrt $06bf 0x0000'0007 (?)
 	// - barkley/bretth/chekflag DSP
@@ -627,14 +628,22 @@ void jaguardsp_cpu_device::execute_run()
 void jaguar_cpu_device::abs_rn(u16 op)
 {
 	const u8 dreg = op & 31;
-	u32 res = m_r[dreg];
-	CLR_ZNC();
-	if (res & 0x80000000)
+	s32 res = (s32)m_r[dreg];
+
+	// "does not work for value 800'0000h", assume missing zero typo.
+	// towers2 and chekflag will hit this, unknown purpose
+	if (res == 0x80000000)
 	{
-		m_r[dreg] = res = -res;
-		m_flags |= CFLAG;
+		m_flags |= NFLAG;
 	}
-	SET_Z(res);
+	else
+	{
+		CLR_ZNC();
+		const bool carry_flag = BIT(res, 31);
+		m_flags |= carry_flag << 1;
+		m_r[dreg] = std::abs(res);
+		SET_Z(res);
+	}
 }
 
 void jaguar_cpu_device::add_rn_rn(u16 op)
@@ -776,8 +785,6 @@ void jaguar_cpu_device::imacn_rn_rn(u16 op)
 	const u32 r1 = m_r[(op >> 5) & 31];
 	const u32 r2 = m_r[op & 31];
 	m_accum += (s64)((int16_t)r1 * (int16_t)r2);
-	// TODO: what's really "unexpected"?
-	logerror("Unexpected IMACN instruction!\n");
 }
 
 void jaguar_cpu_device::imult_rn_rn(u16 op)
@@ -798,21 +805,6 @@ void jaguar_cpu_device::imultn_rn_rn(u16 op)
 	const u32 res = (int16_t)r1 * (int16_t)r2;
 	m_accum = (s32)res;
 	CLR_ZN(); SET_ZN(res);
-
-	op = ROPCODE(m_pc);
-	while ((op >> 10) == 20)
-	{
-		r1 = m_r[(op >> 5) & 31];
-		r2 = m_r[op & 31];
-		m_accum += (s64)((int16_t)r1 * (int16_t)r2);
-		m_pc += 2;
-		op = ROPCODE(m_pc);
-	}
-	if ((op >> 10) == 19)
-	{
-		m_pc += 2;
-		m_r[op & 31] = (u32)m_accum;
-	}
 }
 
 void jaguar_cpu_device::jr_cc_n(u16 op)
@@ -837,6 +829,7 @@ void jaguar_cpu_device::jump_cc_rn(u16 op)
 		const u8 reg = (op >> 5) & 31;
 
 		// HACK: kludge for risky code in the cojag DSP interrupt handlers
+		// also note: using m_r[reg] only fix wolfn3d and gorf2k current regression (with no sound tho)
 		const u32 newpc = (m_icount == m_bankswitch_icount) ? m_a[reg] : m_r[reg];
 		debugger_instruction_hook(m_pc);
 		op = ROPCODE(m_pc);
@@ -933,23 +926,28 @@ void jaguar_cpu_device::mmult_rn_rn(u16 op)
 	const u8 dreg = op & 31;
 	u32 addr = m_mtxaddr;
 	s64 accum = 0;
+	// m_maddw == false:
+	// - ATARI letters on BIOS logo
+	// - superx3d
+	// - ironsol2 DSP (which specifically wants m_b1 rather than m_a, otherwise sound
+	//   overdrive will occur)
+	// - hstrike 3d gameplay renders
+	// TODO: anything that actually uses m_addw == true?
+	u32 address_inc = m_maddw == true ? 4 * count : 4;
 
-	if (m_maddw == false)
+	for (int i = 0; i < count; i++)
 	{
-		for (int i = 0; i < count; i++)
-		{
-			accum += (int16_t)(m_b1[sreg + i/2] >> (16 * ((i & 1) ^ 1))) * (int16_t)READWORD(addr);
-			addr += 2;
-		}
+		s16 a;
+		if (i & 1)
+			a = (s16)(m_b1[sreg + (i >> 1)] >> 16);
+		else
+			a = (s16)(m_b1[sreg + (i >> 1)] & 0xffff);
+		s16 b = (s16)READWORD(addr + 2);
+
+		accum += a * b;
+		addr += address_inc;
 	}
-	else
-	{
-		for (int i = 0; i < count; i++)
-		{
-			accum += (int16_t)(m_b1[sreg + i/2] >> (16 * ((i & 1) ^ 1))) * (int16_t)READWORD(addr);
-			addr += 2 * count;
-		}
-	}
+
 	const u32 res = (u32)accum;
 	m_r[dreg] = res;
 	CLR_ZN(); SET_ZN(res);
@@ -1571,10 +1569,13 @@ void jaguardsp_cpu_device::modulo_w(offs_t offset, u32 data, u32 mem_mask)
 	COMBINE_DATA(&m_modulo);
 }
 
+// top 8-bit of accumulator, sign extended
 u32 jaguardsp_cpu_device::high_accum_r()
 {
-	logerror("%s: high 16-bit accumulator read\n", this->tag());
-	return (m_accum >> 32) & 0xff;
+	if (!machine().side_effects_disabled())
+		logerror("%s: high 8-bit accumulator read\n", this->tag());
+
+	return util::sext((m_accum >> 32) & 0xff, 8);
 }
 
 u32 jaguar_cpu_device::iobus_r(offs_t offset, u32 mem_mask)

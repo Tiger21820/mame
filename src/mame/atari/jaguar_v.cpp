@@ -566,6 +566,8 @@ uint32_t jaguar_state::blitter_r(offs_t offset, uint32_t mem_mask)
 		case B_CMD:
 		{
 			// handle normal idle + inner/outer idle
+			// TODO: other values, which depends on blitter being in async thread
+			// JTRM claims all of them as "for diagnostic only"
 			const u32 is_idle = (m_blitter_status & 1) * 0x805;
 			return is_idle | (m_blitter_status & 2);
 		}
@@ -679,8 +681,11 @@ void jaguar_state::tom_regs_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 			// TODO: INT2 bus mechanism
 
 			case VMODE:
+				// TODO: verify if bit 0 also suspend the object timer until next frame
 				if (reg_store != m_gpu_regs[offset])
+				{
 					set_palette(m_gpu_regs[VMODE]);
+				}
 				break;
 
 			case OBF:   /* clear GPU interrupt */
@@ -814,8 +819,9 @@ TIMER_CALLBACK_MEMBER(jaguar_state::scanline_update)
 	int hdb = param >> 16;
 	const rectangle &visarea = m_screen->visible_area();
 
-	/* only run if video is enabled and we are past the "display begin" */
-	if ((m_gpu_regs[VMODE] & 1) && vc >= (m_gpu_regs[VDB] & 0x7ff))
+	/* only run if video is enabled and we are inside the display range */
+	// - valdiser depends on not drawing at display end ...
+	if ((m_gpu_regs[VMODE] & 1) && vc >= (m_gpu_regs[VDB] & 0x7ff) && vc < (m_gpu_regs[VDE] & 0x7ff))
 	{
 		// TODO: why "760"?
 		// Using this as workaround for stack overflows, investigate.
