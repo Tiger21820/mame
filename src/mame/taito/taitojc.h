@@ -40,6 +40,7 @@ public:
 		, m_analog_ports(*this, "AN.%u", 0)
 		, m_lamps(*this, "lamp%u", 0U)
 		, m_counters(*this, "counter%u", 0U)
+		, m_wheel_motor(*this, "wheel_motor")
 	{
 	}
 
@@ -74,7 +75,8 @@ protected:
 	optional_ioport_array<8> m_analog_ports;
 
 	output_finder<8> m_lamps;
-	output_finder<5> m_counters;
+	output_finder<6> m_counters;
+	output_finder<> m_wheel_motor;
 
 	uint32_t m_dsp_rom_pos = 0;
 

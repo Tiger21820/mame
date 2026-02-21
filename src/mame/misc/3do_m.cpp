@@ -134,10 +134,6 @@ void _3do_state::slow2_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 	switch( offset )
 	{
 		case 0:     /* Boot ROM writes 03180000 here and then starts reading some things */
-		{
-			/* disable ROM overlay */
-			m_bank1->set_entry(0);
-		}
 		m_slow2.cg_input = m_slow2.cg_input << 1 | ( data & 0x00000001 );
 		m_slow2.cg_w_count ++;
 		if ( m_slow2.cg_w_count == 16 )
@@ -155,14 +151,18 @@ uint32_t _3do_state::svf_r(offs_t offset)
 	uint32_t addr = ( offset & ( 0x07fc / 4 ) ) << 9;
 	uint32_t *p = m_vram + addr;
 
-	logerror( "%08X: SVF read offset = %08X\n", m_maincpu->pc(), offset * 4 );
+	if (!machine().side_effects_disabled())
+		logerror( "%08X: SVF read offset = %08X\n", m_maincpu->pc(), offset * 4 );
 
 	switch( offset & ( 0xE000 / 4 ) )
 	{
 	case 0x0000/4:      /* SPORT transfer */
-		for ( int i = 0; i < 512; i++ )
+		if (!machine().side_effects_disabled())
 		{
-			m_svf.sport[i] = p[i];
+			for ( int i = 0; i < 512; i++ )
+			{
+				m_svf.sport[i] = p[i];
+			}
 		}
 		break;
 	case 0x2000/4:      /* Write to color register */
@@ -229,16 +229,4 @@ void _3do_state::uncle_map(address_map &map)
 	// ROM readback
 	map(0x000c, 0x000f).lr32(NAME([] () { return 0; }));
 }
-
-/* 9 -> 5 bits translation */
-
-void _3do_state::video_start()
-{
-	/* We only keep the odd bits and get rid of the even bits */
-//  for ( int i = 0; i < 512; i++ )
-//  {
-//      m_video_bits[i] = ( i & 1 ) | ( ( i & 4 ) >> 1 ) | ( ( i & 0x10 ) >> 2 ) | ( ( i & 0x40 ) >> 3 ) | ( ( i & 0x100 ) >> 4 );
-//  }
-}
-
 

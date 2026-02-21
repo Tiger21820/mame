@@ -1152,6 +1152,8 @@ if BUSES["BBC_ROM"] then
 		MAME_DIR .. "src/devices/bus/bbc/rom/nvram.h",
 		MAME_DIR .. "src/devices/bus/bbc/rom/datagem.cpp",
 		MAME_DIR .. "src/devices/bus/bbc/rom/datagem.h",
+		MAME_DIR .. "src/devices/bus/bbc/rom/detalker.cpp",
+		MAME_DIR .. "src/devices/bus/bbc/rom/detalker.h",
 		MAME_DIR .. "src/devices/bus/bbc/rom/dfs.cpp",
 		MAME_DIR .. "src/devices/bus/bbc/rom/dfs.h",
 		MAME_DIR .. "src/devices/bus/bbc/rom/genie.cpp",
@@ -1173,6 +1175,8 @@ if BUSES["BBC_TUBE"] then
 	files {
 		MAME_DIR .. "src/devices/bus/bbc/tube/tube.cpp",
 		MAME_DIR .. "src/devices/bus/bbc/tube/tube.h",
+		MAME_DIR .. "src/devices/bus/bbc/tube/cms6502.cpp",
+		MAME_DIR .. "src/devices/bus/bbc/tube/cms6502.h",
 		MAME_DIR .. "src/devices/bus/bbc/tube/tube_32016.cpp",
 		MAME_DIR .. "src/devices/bus/bbc/tube/tube_32016.h",
 		MAME_DIR .. "src/devices/bus/bbc/tube/tube_6502.cpp",
@@ -1553,6 +1557,8 @@ if BUSES["CBMIEC"] then
 		MAME_DIR .. "src/devices/bus/cbmiec/vic1520.h",
 		MAME_DIR .. "src/devices/bus/cbmiec/c1526.cpp",
 		MAME_DIR .. "src/devices/bus/cbmiec/c1526.h",
+		MAME_DIR .. "src/devices/bus/cbmiec/c5181.cpp",
+		MAME_DIR .. "src/devices/bus/cbmiec/c5181.h",
 	}
 end
 
@@ -2885,6 +2891,8 @@ if BUSES["ISA"] then
 		MAME_DIR .. "src/devices/bus/isa/myb3k_com.h",
 		MAME_DIR .. "src/devices/bus/isa/myb3k_fdc.cpp",
 		MAME_DIR .. "src/devices/bus/isa/myb3k_fdc.h",
+		MAME_DIR .. "src/devices/bus/isa/ncr53c400.cpp",
+		MAME_DIR .. "src/devices/bus/isa/ncr53c400.h",
 		MAME_DIR .. "src/devices/bus/isa/ne1000.cpp",
 		MAME_DIR .. "src/devices/bus/isa/ne1000.h",
 		MAME_DIR .. "src/devices/bus/isa/ne2000.cpp",
@@ -3305,6 +3313,25 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/bus/mm2/exp.h,BUSES["MM2"] = true
+---------------------------------------------------
+
+if BUSES["MM2"] then
+	files {
+		MAME_DIR .. "src/devices/bus/mm2/exp.cpp",
+		MAME_DIR .. "src/devices/bus/mm2/exp.h",
+		MAME_DIR .. "src/devices/bus/mm2/crtc186.cpp",
+		MAME_DIR .. "src/devices/bus/mm2/crtc186.h",
+		MAME_DIR .. "src/devices/bus/mm2/mm2kb.cpp",
+		MAME_DIR .. "src/devices/bus/mm2/mm2kb.h",
+		MAME_DIR .. "src/devices/bus/mm2/mmc186.cpp",
+		MAME_DIR .. "src/devices/bus/mm2/mmc186.h",
+	}
+end
+
+
+---------------------------------------------------
+--
 --@src/devices/bus/mpf1/slot.h,BUSES["MPF1"] = true
 ---------------------------------------------------
 
@@ -3563,6 +3590,8 @@ if BUSES["MULTIBUS"] then
 	files {
 		MAME_DIR .. "src/devices/bus/multibus/multibus.cpp",
 		MAME_DIR .. "src/devices/bus/multibus/multibus.h",
+		MAME_DIR .. "src/devices/bus/multibus/exos201.cpp",
+		MAME_DIR .. "src/devices/bus/multibus/exos201.h",
 		MAME_DIR .. "src/devices/bus/multibus/dsd5217.cpp",
 		MAME_DIR .. "src/devices/bus/multibus/dsd5217.h",
 		MAME_DIR .. "src/devices/bus/multibus/isbc202.cpp",
@@ -4439,6 +4468,8 @@ if BUSES["PCI"] then
 		MAME_DIR .. "src/devices/bus/pci/sonicvibes.h",
 		MAME_DIR .. "src/devices/bus/pci/sw1000xg.cpp",
 		MAME_DIR .. "src/devices/bus/pci/sw1000xg.h",
+		MAME_DIR .. "src/devices/bus/pci/trio_pci.cpp",
+		MAME_DIR .. "src/devices/bus/pci/trio_pci.h",
 		MAME_DIR .. "src/devices/bus/pci/virge_pci.cpp",
 		MAME_DIR .. "src/devices/bus/pci/virge_pci.h",
 		MAME_DIR .. "src/devices/bus/pci/vision.cpp",
@@ -4451,6 +4482,23 @@ if BUSES["PCI"] then
 		MAME_DIR .. "src/devices/bus/pci/ymp21.h",
 		MAME_DIR .. "src/devices/bus/pci/zr36057.cpp",
 		MAME_DIR .. "src/devices/bus/pci/zr36057.h",
+	}
+end
+
+
+---------------------------------------------------
+--
+--@src/devices/bus/pencil2/slot.h,BUSES["PENCIL2"] = true
+---------------------------------------------------
+
+if BUSES["PENCIL2"] then
+	files {
+		MAME_DIR .. "src/devices/bus/pencil2/slot.cpp",
+		MAME_DIR .. "src/devices/bus/pencil2/slot.h",
+		MAME_DIR .. "src/devices/bus/pencil2/coleco.cpp",
+		MAME_DIR .. "src/devices/bus/pencil2/coleco.h",
+		MAME_DIR .. "src/devices/bus/pencil2/ram.cpp",
+		MAME_DIR .. "src/devices/bus/pencil2/ram.h",
 	}
 end
 
@@ -5352,6 +5400,8 @@ if BUSES["SPECTRUM"] then
 		MAME_DIR .. "src/devices/bus/spectrum/fuller.h",
 		MAME_DIR .. "src/devices/bus/spectrum/kempjoy.cpp",
 		MAME_DIR .. "src/devices/bus/spectrum/kempjoy.h",
+		MAME_DIR .. "src/devices/bus/spectrum/kempmouse.cpp",
+		MAME_DIR .. "src/devices/bus/spectrum/kempmouse.h",
 		MAME_DIR .. "src/devices/bus/spectrum/kempdisc.cpp",
 		MAME_DIR .. "src/devices/bus/spectrum/kempdisc.h",
 		MAME_DIR .. "src/devices/bus/spectrum/logitek.cpp",
