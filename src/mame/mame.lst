@@ -18794,6 +18794,16 @@ watrball
 @source:gaelco/ds5002fp_programmer.cpp
 gaelcods
 
+@source:gaelco/futbol3.cpp
+autopapa
+donpepito
+futbol
+futbola
+futbolt
+mueve
+obladi
+susanita
+
 @source:gaelco/gaelco.cpp
 bigkarnk
 bigkarnka
@@ -18890,13 +18900,6 @@ surfplnt20
 surfplnt30
 surfplnt31
 surfplnt40
-
-@source:gaelco/gaelcof3.cpp
-autopapa
-donpepito
-mueve
-obladi
-susanita
 
 @source:gaelco/gaelcopc.cpp
 rriders
@@ -20562,6 +20565,13 @@ hpz80unk
 @source:hp/jornada.cpp
 jorn720
 
+@source:huangyeh/hy-268a.cpp
+xycs
+
+@source:huangyeh/hy-9802.cpp
+wlfx
+wlzb
+
 @source:husky/hawk.cpp
 hawk
 
@@ -20863,6 +20873,7 @@ fl7_twa
 goldfrui
 goldstar
 goldstbl
+goldstbla
 gregular
 halltsk
 hamhouse
@@ -22214,6 +22225,10 @@ in213ae
 @source:intel/basic52.cpp
 basic31
 basic52
+
+@source:intel/i420ex.cpp
+a486ap4
+entrada
 
 @source:intel/imds2.cpp
 imds2
@@ -34176,6 +34191,13 @@ ds5000
 @source:namco/ds6000.cpp
 ds6000
 
+@source:namco/funcube.cpp
+funcube
+funcube2
+funcube3
+funcube4
+funcube5
+
 @source:namco/gal3.cpp
 gal3
 
@@ -34245,6 +34267,9 @@ superpacm
 todruaga
 todruagao
 todruagas
+
+@source:namco/namcoeva.cpp
+hammerch
 
 @source:namco/namcofl.cpp
 finalapr
@@ -37133,7 +37158,6 @@ asst128
 486igb21
 486wb6a3
 a433cc
-a486ap4
 a486isa
 a486sio
 a486sp3g
@@ -43115,9 +43139,6 @@ macsbios
 yujan
 yuka
 
-@source:seta/namcoeva.cpp
-hammerch
-
 @source:seta/rmhaihai.cpp
 rmhaihai
 rmhaihai2
@@ -43210,11 +43231,6 @@ deerhuntj
 endrichs
 endrichsa
 endrichsb
-funcube
-funcube2
-funcube3
-funcube4
-funcube5
 grdians
 grdiansa
 grdiansbl
@@ -44090,9 +44106,6 @@ hprotr8a
 @source:skeleton/ht68k.cpp
 ht68k
 
-@source:skeleton/huangyeh_m68k.cpp
-wlzb
-
 @source:skeleton/hudson_poems.cpp
 ewalk2tv
 marimba
@@ -44191,6 +44204,7 @@ lggp40
 @source:skeleton/lgtz80.cpp
 arthurkn
 arthurkn100
+circus2
 fruitcat
 pharmyst
 

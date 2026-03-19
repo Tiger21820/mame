@@ -29,7 +29,7 @@ TODO:
 #define LOG_PMTMR  (1U << 4) // verbose timer reads and processor levels
 
 #define VERBOSE (LOG_GENERAL | LOG_ACPI | LOG_ACPIEX | LOG_GPIO)
-//#define LOG_OUTPUT_FUNC osd_printf_warning
+//#define LOG_OUTPUT_FUNC osd_printf_info
 
 #include "logmacro.h"
 
@@ -45,6 +45,7 @@ vt82c586b_acpi_device::vt82c586b_acpi_device(const machine_config &mconfig, cons
 	: pci_device(mconfig, VT82C586B_ACPI, tag, owner, clock)
 	, m_acpi(*this, "acpi")
 	, m_sci_pin_cb(*this)
+	, m_general_config(0)
 {
 	// xxxx ---- Silicon Version Code
 	// ---- xxxx Silicon Revision Code
@@ -58,6 +59,9 @@ vt82c586b_acpi_device::vt82c586b_acpi_device(const machine_config &mconfig, cons
 void vt82c586b_acpi_device::device_start()
 {
 	pci_device::device_start();
+
+	// undefined, use ls5ampv3 default
+	m_iobase = 0x5000;
 
 	save_item(NAME(m_pin_config));
 	save_item(NAME(m_general_config));
@@ -80,8 +84,6 @@ void vt82c586b_acpi_device::device_reset()
 	m_pin_config = 0xc0;
 	m_general_config = 0;
 	m_sci_irq_config = 0;
-	// undefined, use ls5ampv3 default
-	m_iobase = 0x5000;
 	std::fill(std::begin(m_irq_channel), std::end(m_irq_channel), 0);
 	remap_cb();
 }

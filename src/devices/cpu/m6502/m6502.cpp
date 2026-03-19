@@ -258,8 +258,6 @@ void m6502_device::do_sbc_d(uint8_t val)
 	m_P &= ~(F_N|F_V|F_Z|F_C);
 	uint16_t diff = m_A - val - c;
 	uint8_t al = (m_A & 15) - (val & 15) - c;
-	if(int8_t(al) < 0)
-		al -= 6;
 	uint8_t ah = (m_A >> 4) - (val >> 4) - (int8_t(al) < 0);
 	if(!uint8_t(diff))
 		m_P |= F_Z;
@@ -269,6 +267,8 @@ void m6502_device::do_sbc_d(uint8_t val)
 		m_P |= F_V;
 	if(!(diff & 0xff00))
 		m_P |= F_C;
+	if(int8_t(al) < 0)
+		al -= 6;
 	if(int8_t(ah) < 0)
 		ah -= 6;
 	m_A = (ah << 4) | (al & 15);
@@ -407,12 +407,14 @@ void m6502_device::execute_set_input(int inputnum, int state)
 	case IRQ_LINE: m_irq_state = state == ASSERT_LINE; break;
 	case APU_IRQ_LINE: m_apu_irq_state = state == ASSERT_LINE; break;
 	case NMI_LINE:
-		if(machine().time() > attotime::zero && !m_nmi_state && state == ASSERT_LINE)
+		// don't accept NMI edge at exactly the same time RESET is cleared
+		if(!m_nmi_state && state == ASSERT_LINE && total_cycles())
 			m_nmi_pending = true;
 		m_nmi_state = state == ASSERT_LINE;
 		break;
 	case V_LINE:
-		if(machine().time() > attotime::zero && !m_v_state && state == ASSERT_LINE)
+		// don't accept SO edge at exactly the same time RESET is cleared
+		if(!m_v_state && state == ASSERT_LINE && total_cycles())
 			m_P |= F_V;
 		m_v_state = state == ASSERT_LINE;
 		break;
