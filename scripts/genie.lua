@@ -153,7 +153,6 @@ newoption {
 		{ "macosx",        "OSX"                    },
 		{ "windows",       "Windows"                },
 		{ "haiku",         "Haiku"                  },
-		{ "solaris",       "Solaris SunOS"          },
 	},
 }
 
@@ -475,7 +474,6 @@ language "C++"
 
 flags {
 	"StaticRuntime",
-	"Cpp17",
 }
 
 	if not _OPTIONS["NOWERROR"] then
@@ -697,12 +695,6 @@ elseif (_OPTIONS["PLATFORM"] == "x86") or (_OPTIONS["PLATFORM"] == "arm64") then
 		}
 end
 
-	defines {
-		"LUA_COMPAT_ALL",
-		"LUA_COMPAT_5_1",
-		"LUA_COMPAT_5_2",
-	}
-
 	if _ACTION == "gmake" or _ACTION == "ninja" then
 
 	--we compile C-only to C99 standard with GNU extensions
@@ -713,11 +705,11 @@ end
 
 local version = str_to_version(_OPTIONS["gcc_version"])
 	buildoptions_cpp {
-		"-std=c++17",
+		"-std=c++20",
 	}
 
 	buildoptions_objcpp {
-		"-std=c++17",
+		"-std=c++20",
 	}
 -- this speeds it up a bit by piping between the preprocessor/compiler/assembler
 	buildoptions {
@@ -1013,8 +1005,8 @@ end
 
 		local version = str_to_version(_OPTIONS["gcc_version"])
 		if string.find(_OPTIONS["gcc"], "clang") or string.find(_OPTIONS["gcc"], "asmjs") or string.find(_OPTIONS["gcc"], "android") then
-			if version < 70000 then
-				print("Clang version 7.0 or later needed")
+			if version < 130000 then
+				print("Clang version 13 or later needed")
 				os.exit(-1)
 			end
 			buildoptions {
@@ -1040,8 +1032,8 @@ end
 				}
 			end
 		else
-			if version < 100300 then
-				print("GCC version 10.3 or later needed")
+			if version < 110000 then
+				print("GCC version 11 or later needed")
 				os.exit(-1)
 			end
 			buildoptions_cpp {
@@ -1108,7 +1100,7 @@ configuration { "asmjs" }
 		"-s USE_SDL_TTF=2",
 	}
 	buildoptions_cpp {
-		"-std=c++17",
+		"-std=c++20",
 		"-s EXCEPTION_CATCHING_ALLOWED=\"['_ZN15running_machine17start_all_devicesEv','_ZN12cli_frontend7executeEiPPc','_ZN8chd_file11open_commonEb','_ZN8chd_file13read_metadataEjjRNSt3__212basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE','_ZN8chd_file13read_metadataEjjRNSt3__26vectorIhNS0_9allocatorIhEEEE','_ZNK19netlist_mame_device19base_validity_checkER16validity_checker']\"",
 	}
 	defines {
@@ -1203,18 +1195,12 @@ configuration { "osx*" }
 		}
 
 configuration { "mingw*" }
-		if _OPTIONS["osd"]=="sdl" then
-			linkoptions {
-				"-Wl,--start-group",
-			}
-		else
-			linkoptions {
-				"-static",
-			}
-			flags {
-				"LinkSupportCircularDependencies",
-			}
-		end
+		linkoptions {
+			"-static",
+		}
+		flags {
+			"LinkSupportCircularDependencies",
+		}
 		links {
 			"user32",
 			"winmm",
@@ -1254,11 +1240,8 @@ configuration { "vs20*" }
 if _OPTIONS["vs"]==nil then
 		buildoptions {
 			"/bigobj",
-			"/permissive-",
 			"/utf-8",
-			"/Zc:enumTypes",
 			"/Zc:preprocessor",
-			"/Zc:templateScope",
 		}
 
 		buildoptions {
@@ -1295,9 +1278,13 @@ if _OPTIONS["vs"]==nil then
 
 		buildoptions_cpp {
 			"/Zc:__cplusplus",
+			"/Zc:enumTypes",
+			"/Zc:templateScope",
+			"/Zc:u8EscapeEncoding",
 		}
 
 		flags {
+			"Cpp20",
 			"ExtraWarnings",
 		}
 elseif _OPTIONS["vs"]=="intel-15" then
@@ -1360,6 +1347,7 @@ elseif _OPTIONS["vs"]=="clangcl" then
 	end
 
 		flags {
+			"Cpp20",
 			-- don't set ExtraWarnings flag (/W4 == -Wall -Wextra); use default (/W3 == -Wall) instead
 		}
 end

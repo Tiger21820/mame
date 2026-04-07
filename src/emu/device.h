@@ -21,6 +21,7 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <typeinfo>
 #include <unordered_map>
@@ -243,7 +244,7 @@ public:
 		: m_creator(&create_device<DeviceClass>)
 		, m_type(typeid(DeviceClass))
 		, m_shortname(Traits::shortname)
-		, m_fullname(Traits::fullname)
+		, m_fullname((char const *)Traits::fullname)
 		, m_source(Traits::source)
 		, m_emulation_flags(DeviceClass::emulation_flags())
 		, m_unemulated_features(DeviceClass::unemulated_features())
@@ -258,7 +259,7 @@ public:
 		: m_creator(&create_driver<DriverClass>)
 		, m_type(typeid(DriverClass))
 		, m_shortname(Traits::shortname)
-		, m_fullname(Traits::fullname)
+		, m_fullname((char const *)Traits::fullname)
 		, m_source(Traits::source)
 		, m_emulation_flags(DriverClass::emulation_flags() | Flags)
 		, m_unemulated_features(DriverClass::unemulated_features() | Unemulated)
@@ -404,7 +405,7 @@ extern emu::detail::device_registrar const registered_device_types;
 			{ \
 				static inline constexpr char const *const shortname = (ShortName); \
 				static inline constexpr char const *const source = __FILE__; \
-				static constexpr char const fullname[] = (FullName); \
+				static constexpr std::remove_reference_t<decltype((FullName)[0])> const fullname[] = (FullName); \
 			}; \
 			constexpr decltype(Type##_device_traits::fullname) Type##_device_traits::fullname; \
 		} \
@@ -446,7 +447,7 @@ extern emu::detail::device_registrar const registered_device_types;
 			{ \
 				static inline constexpr char const *const shortname = (ShortName); \
 				static inline constexpr char const *const source = __FILE__; \
-				static constexpr char const fullname[] = (FullName); \
+				static constexpr std::remove_reference_t<decltype((FullName)[0])> const fullname[] = (FullName); \
 			}; \
 			constexpr decltype(Type##_device_traits::fullname) Type##_device_traits::fullname; \
 		} \
@@ -512,7 +513,7 @@ class device_t : public delegate_late_bind
 
 		// private state
 		simple_list<device_t>   m_list;         // list of sub-devices we own
-		std::unordered_map<std::string_view, std::reference_wrapper<device_t>> m_tagmap;      // map of devices looked up and found by subtag
+		std::unordered_map<std::string_view, std::reference_wrapper<device_t> > m_tagmap;      // map of devices looked up and found by subtag
 	};
 
 	class interface_list
@@ -569,7 +570,7 @@ protected:
 	device_t(
 			const machine_config &mconfig,
 			device_type type,
-			const char *tag,
+			std::string_view tag,
 			device_t *owner,
 			u32 clock);
 
