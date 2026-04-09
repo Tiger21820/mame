@@ -21503,8 +21503,11 @@ ROM_START( cmast91 )
 ROM_END
 
 /*
-  Dyna D9004 PCB, DYNA CLLB
-  V1.30 string in ROM
+  Cuty Line Limited
+  Dyna CLLB
+
+  Dyna D9004/D9101 PCB
+  V1.30
 
 */
 ROM_START( cll )
@@ -21528,6 +21531,111 @@ ROM_START( cll )
 	ROM_LOAD( "cm_3.bin",  0x08000, 0x8000, CRC(dc77d04a) SHA1(d8656130cde54d4bb96307899f6d607867e49e6c) )  // AM27C256, 11xxxxxxxxxxxxx = 0xFF
 	ROM_LOAD( "cm_1.bin",  0x10000, 0x8000, CRC(71bdab69) SHA1(d2c594ed88d6368df15b623c48eecc1c219b839e) )  // AM27C256, 11xxxxxxxxxxxxx = 0xFF
 	ROM_LOAD( "cm_2.bin",  0x18000, 0x8000, CRC(201d1e90) SHA1(c3c5224646b777f98ee35d146136788029b1782d) )  // AM27C256, 11xxxxxxxxxxxxx = 0xFF
+
+	ROM_REGION( 0x40000, "user1", ROMREGION_ERASE00 ) // girls GFX, PCB shows the girls when dip 5:1 is on
+	// videos show it has the same screens as cmast91. Reusing that ROM for now, but would be better to have it dumped
+	ROM_LOAD( "9.bin",  0x00000, 0x40000, BAD_DUMP CRC(92342276) SHA1(f9436752f2ec67cf873fd01c729c7c113dc18be0) )
+
+	// PROMs weren't included in the dump, using cmast91's for now. Colors seem correct, though.
+	ROM_REGION( 0x300, "proms", 0 )
+	ROM_LOAD( "p1.bin", 0x0000, 0x0100, BAD_DUMP CRC(ac529f04) SHA1(5bc92e50c85bb23e609172cc15c430ddea7fdcb5) )
+	ROM_LOAD( "p2.bin", 0x0100, 0x0100, BAD_DUMP CRC(3febce95) SHA1(c7c0fec0fb024ebf7d7365a09d28ba3d0037b0b4) )
+	ROM_LOAD( "p3.bin", 0x0200, 0x0100, BAD_DUMP CRC(99dbdf19) SHA1(3680335406f63289f8d9a81b4cd163e4aa0c14d4) )
+
+	ROM_REGION( 0x100, "proms2", 0 )
+	ROM_LOAD( "p4.bin", 0x0000, 0x0100, BAD_DUMP CRC(72212427) SHA1(e87a91f28284313c706ebb8175a3586780636e31) )
+
+	ROM_REGION( 0x800, "plds", 0 )
+	ROM_LOAD( "pld1.bin", 0x0000, 0x0104, NO_DUMP )
+	ROM_LOAD( "pld2.bin", 0x0200, 0x0104, NO_DUMP )
+	ROM_LOAD( "pld3.bin", 0x0400, 0x0104, NO_DUMP )
+	ROM_LOAD( "pld4.bin", 0x0600, 0x0104, NO_DUMP )
+ROM_END
+
+/*
+  Cuty Line Limited
+  Dyna CLLJ
+
+  Dyna D9101 PCB
+  V1.30
+
+  GFX bank #0 has extra tiles for "CHERRY CASINO"
+  (dunno where are used)
+
+*/
+ROM_START( clla )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "nosticker.16h",  0x0000, 0x1000, CRC(2ac9f467) SHA1(90204dc2cd5a5e79c6743dd266306db56918329d) )  // 27512
+	ROM_CONTINUE(               0x4000, 0x1000 )
+	ROM_CONTINUE(               0x1000, 0x1000 )
+	ROM_CONTINUE(               0x5000, 0x1000 )
+	ROM_CONTINUE(               0x2000, 0x1000 )
+	ROM_CONTINUE(               0x6000, 0x1000 )
+	ROM_CONTINUE(               0x3000, 0x1000 )
+	ROM_CONTINUE(               0x7000, 0x9000 )
+
+	ROM_REGION( 0x18000, "gfx1", 0 )  // all 27C256
+	ROM_LOAD( "cm74.2e",  0x00000, 0x8000, CRC(02764bde) SHA1(6e9715b82fdbf644d955281b31351666de457d01) )
+	ROM_LOAD( "cm64.2f",  0x08000, 0x8000, CRC(e0bc6636) SHA1(146cae7e4604211f5724f8b73b17895e7f0bc61f) )
+	ROM_LOAD( "cm54.2g",  0x10000, 0x8000, CRC(59ffb35c) SHA1(20c3acc5b94346949990a6b5b75a09211014ecc8) )
+
+	ROM_REGION( 0x20000, "gfx2", 0 )
+	ROM_LOAD( "cm4.2h",  0x00000, 0x8000, CRC(0dbabaa2) SHA1(44235b19dac1c996e2166672b03f6e3888ecbefa) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
+	ROM_LOAD( "cm3.2j",  0x08000, 0x8000, CRC(dc77d04a) SHA1(d8656130cde54d4bb96307899f6d607867e49e6c) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
+	ROM_LOAD( "cm1.2l",  0x10000, 0x8000, CRC(71bdab69) SHA1(d2c594ed88d6368df15b623c48eecc1c219b839e) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
+	ROM_LOAD( "cm2.2k",  0x18000, 0x8000, CRC(201d1e90) SHA1(c3c5224646b777f98ee35d146136788029b1782d) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
+
+	ROM_REGION( 0x40000, "user1", ROMREGION_ERASE00 ) // girls GFX, PCB shows the girls when dip 5:1 is on
+	// videos show it has the same screens as cmast91. Reusing that ROM for now, but would be better to have it dumped
+	ROM_LOAD( "9.bin",  0x00000, 0x40000, BAD_DUMP CRC(92342276) SHA1(f9436752f2ec67cf873fd01c729c7c113dc18be0) )
+
+	// PROMs weren't included in the dump, using cmast91's for now. Colors seem correct, though.
+	ROM_REGION( 0x300, "proms", 0 )
+	ROM_LOAD( "p1.bin", 0x0000, 0x0100, BAD_DUMP CRC(ac529f04) SHA1(5bc92e50c85bb23e609172cc15c430ddea7fdcb5) )
+	ROM_LOAD( "p2.bin", 0x0100, 0x0100, BAD_DUMP CRC(3febce95) SHA1(c7c0fec0fb024ebf7d7365a09d28ba3d0037b0b4) )
+	ROM_LOAD( "p3.bin", 0x0200, 0x0100, BAD_DUMP CRC(99dbdf19) SHA1(3680335406f63289f8d9a81b4cd163e4aa0c14d4) )
+
+	ROM_REGION( 0x100, "proms2", 0 )
+	ROM_LOAD( "p4.bin", 0x0000, 0x0100, BAD_DUMP CRC(72212427) SHA1(e87a91f28284313c706ebb8175a3586780636e31) )
+
+	ROM_REGION( 0x800, "plds", 0 )
+	ROM_LOAD( "pld1.bin", 0x0000, 0x0104, NO_DUMP )
+	ROM_LOAD( "pld2.bin", 0x0200, 0x0104, NO_DUMP )
+	ROM_LOAD( "pld3.bin", 0x0400, 0x0104, NO_DUMP )
+	ROM_LOAD( "pld4.bin", 0x0600, 0x0104, NO_DUMP )
+ROM_END
+
+/*
+  Cuty Line Limited
+  Dyna CLLJ
+
+  Dyna D9101 PCB
+  V1.30
+
+  Same program as CLLJ, but with minimal differences on GFX bank #0 
+
+*/
+ROM_START( cllb )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "nosticker.16h",  0x0000, 0x1000, CRC(2ac9f467) SHA1(90204dc2cd5a5e79c6743dd266306db56918329d) )  // 27512
+	ROM_CONTINUE(               0x4000, 0x1000 )
+	ROM_CONTINUE(               0x1000, 0x1000 )
+	ROM_CONTINUE(               0x5000, 0x1000 )
+	ROM_CONTINUE(               0x2000, 0x1000 )
+	ROM_CONTINUE(               0x6000, 0x1000 )
+	ROM_CONTINUE(               0x3000, 0x1000 )
+	ROM_CONTINUE(               0x7000, 0x9000 )
+
+	ROM_REGION( 0x18000, "gfx1", 0 )  // all 27C256
+	ROM_LOAD( "nosticker.2e",  0x00000, 0x8000, CRC(1edf1f1d) SHA1(558fa01f1efd7f6541047d3930bdce0974bae5b0) )
+	ROM_LOAD( "nosticker.2f",  0x08000, 0x8000, CRC(13582e74) SHA1(27e318542606b8e8d38250749ba996402d314abd) )
+	ROM_LOAD( "nosticker.2g",  0x10000, 0x8000, CRC(28ff88cc) SHA1(46bc0407be857e8348159735b60cfb660f047a56) )
+
+	ROM_REGION( 0x20000, "gfx2", 0 )
+	ROM_LOAD( "nosticker.2h",  0x00000, 0x8000, CRC(0dbabaa2) SHA1(44235b19dac1c996e2166672b03f6e3888ecbefa) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
+	ROM_LOAD( "nosticker.2j",  0x08000, 0x8000, CRC(dc77d04a) SHA1(d8656130cde54d4bb96307899f6d607867e49e6c) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
+	ROM_LOAD( "nosticker.2l",  0x10000, 0x8000, CRC(71bdab69) SHA1(d2c594ed88d6368df15b623c48eecc1c219b839e) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
+	ROM_LOAD( "nosticker.2k",  0x18000, 0x8000, CRC(201d1e90) SHA1(c3c5224646b777f98ee35d146136788029b1782d) )  // 27C256, 11xxxxxxxxxxxxx = 0xFF
 
 	ROM_REGION( 0x40000, "user1", ROMREGION_ERASE00 ) // girls GFX, PCB shows the girls when dip 5:1 is on
 	// videos show it has the same screens as cmast91. Reusing that ROM for now, but would be better to have it dumped
@@ -27104,6 +27212,25 @@ ROM_START( eldoraddoab )  // Dyna ELD2 V1.5U (Dyna Grayhound version)
 
 	ROM_REGION( 0x20000, "gfx2", 0 )
 	ROM_LOAD( "8.d8", 0x00000, 0x20000, CRC(d39c3cf2) SHA1(56a56ae7c931aa3f94643e1fbf33bfc6ac1c1b2b) )
+
+	ROM_REGION( 0x300, "proms", 0 )
+	ROM_LOAD( "82s129.e12", 0x000, 0x100, CRC(1564bb12) SHA1(641a681866ac5d53d88752a076ad958c94e68a3a) )
+	ROM_LOAD( "82s129.e10", 0x100, 0x100, CRC(db31f7ac) SHA1(9f23d65dc0c43b1700093461d2c5277cc1d42f49) )
+	ROM_LOAD( "82s129.e11", 0x200, 0x100, CRC(49c4df77) SHA1(860fa207c74eab00ea6c7f3fa16aafba84195336) )
+
+	ROM_REGION( 0x100, "proms2", 0 )
+	ROM_LOAD( "82s129.h5", 0x000, 0x100, CRC(209ccf78) SHA1(9f92875855702c7cc4d429ba5f463b698e0e91d3) )
+ROM_END
+
+ROM_START( eldoraddoac )  // Dyna ELD2 V1.2D (string in ROM)
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "512.h12", 0x00000, 0x10000, CRC(4d6fce75) SHA1(4a3bb668add4ccb6b144ca26bfc8fa4b40f883f2) )
+
+	ROM_REGION( 0x20000, "gfx1", 0 )
+	ROM_LOAD( "el9a.d10", 0x00000, 0x20000, CRC(ee7b1537) SHA1(e10b2f3c9291d836782148c4ae388c94ee47a964) )
+
+	ROM_REGION( 0x20000, "gfx2", 0 )
+	ROM_LOAD( "el8a.d8",  0x00000, 0x20000, CRC(d39c3cf2) SHA1(56a56ae7c931aa3f94643e1fbf33bfc6ac1c1b2b) )
 
 	ROM_REGION( 0x300, "proms", 0 )
 	ROM_LOAD( "82s129.e12", 0x000, 0x100, CRC(1564bb12) SHA1(641a681866ac5d53d88752a076ad958c94e68a3a) )
@@ -33648,18 +33775,21 @@ GAME(  1993, missbingoc, crazybonb, crazybonb, crazybonb, cmaster_state, init_cr
 GAME(  199?, chthree,    cmaster,   cm,        cmaster,   cmaster_state, init_chthree,   ROT0, "Promat",             "Channel Three",                                0 ) // hack of cmaster, still shows DYNA CM-1 V1.01 in book-keeping
 
 // Dyna D9101 PCB
-GAMEL( 1991, eldoraddoa,  0         , animalhs, eldoradoa, cmaster_state, init_eldoraddoa, ROT0, "Dyna",              "El Dorado (V1.4D)",                          0,                   layout_animalhs )
-GAMEL( 1991, eldoraddoab, eldoraddoa, animalhs, eldoradoa, cmaster_state, init_eldoraddoa, ROT0, "Dyna / Grayhound",  "El Dorado (V1.5U, Dyna/Grayhound)",          0,                   layout_animalhs )
-GAMEL( 1991, animalhs,    0,          animalhs, animalhs,  cmaster_state, init_animalhs,   ROT0, "Suns Co Ltd.",      "Animal House (V1.0, set 1)",                 0,                   layout_animalhs )
-GAMEL( 1991, animalhsa,   animalhs,   animalhs, animalhs,  cmaster_state, init_animalhs,   ROT0, "Suns Co Ltd.",      "Animal House (V1.0, set 2)",                 0,                   layout_animalhs )
+GAMEL( 1991, eldoraddoa,  0         , animalhs, eldoradoa, cmaster_state, init_eldoraddoa, ROT0, "Dyna",               "El Dorado (Dyna D9101 HW, V1.4D)",                 0,             layout_animalhs )
+GAMEL( 1991, eldoraddoab, eldoraddoa, animalhs, eldoradoa, cmaster_state, init_eldoraddoa, ROT0, "Dyna / Grayhound",   "El Dorado (Dyna D9101 HW, V1.5U, Dyna/Grayhound)", 0,             layout_animalhs )
+GAMEL( 1991, eldoraddoac, eldoraddoa, animalhs, eldoradoa, cmaster_state, init_eldoraddoa, ROT0, "Dyna",               "El Dorado (Dyna D9101 HW, V1.2D)",                 0,             layout_animalhs ) // original with different custom ICs
+GAMEL( 1991, animalhs,    0,          animalhs, animalhs,  cmaster_state, init_animalhs,   ROT0, "Suns Co Ltd.",       "Animal House (V1.0, set 1)",                 0,                   layout_animalhs )
+GAMEL( 1991, animalhsa,   animalhs,   animalhs, animalhs,  cmaster_state, init_animalhs,   ROT0, "Suns Co Ltd.",       "Animal House (V1.0, set 2)",                 0,                   layout_animalhs )
 
-GAME(  1991, cmast91,     0,          cmast91,  cmast91,  cmaster_state,  init_cmast91,    ROT0, "Dyna",              "Cherry Master '91 (ver.1.30)",               0 )
-GAMEL( 1991, cll,         0,          cmast91,  cmast91,  cmaster_state,  init_cll,        ROT0, "Dyna / TAB Austria","Cuty Line Limited (ver.1.30)",               0,                   layout_cmv4 ) // needs verifying dips, missing girls
-GAMEL( 1996, cmast97,     0,          cmast97,  cmast97,  cmast97_state,  init_cm97,       ROT0, "Dyna",              "Cherry Master '97 (V1.7, set 1)",            0,                   layout_cmast97 )
-GAMEL( 1997, cmast97a,    cmast97,    cmast97,  cmast97a, cmast97_state,  empty_init,      ROT0, "Dyna",              "Cherry Master '97 (V1.7, set 2, no girls)",  0,                   layout_cmast97 )
-GAMEL( 1996, cmast97b,    cmast97,    cmast97,  cmast97a, cmast97_state,  empty_init,      ROT0, "Dyna",              "Cherry Master '97 (V1.7, set 3, no girls)",  0,                   layout_cmast97 )
-GAMEL( 1996, cmast97i,    cmast97,    cmast97,  cmast97i, cmast97_state,  empty_init,      ROT0, "Dyna",              "Cheri Mondo '97 (V1.4I)",                    0,                   layout_cmast97 )
-GAMEL( 1997, jpknight,    0,          jpknight, cmast97a, cmast97_state,  empty_init,      ROT0, "Dyna / R-Stone",    "Jackpot Knight (V1.1)",                      0,                   layout_cmast97 ) // check inputs
+GAME(  1991, cmast91,     0,          cmast91,  cmast91,  cmaster_state,  init_cmast91,    ROT0, "Dyna",               "Cherry Master '91 (ver.1.30)",               0 )
+GAMEL( 1991, cll,         0,          cmast91,  cmast91,  cmaster_state,  init_cll,        ROT0, "Dyna / TAB Austria", "Cuty Line Limited (ver.1.30, CLLB)",         0,                   layout_cmv4 ) // needs verifying dips, missing girls
+GAMEL( 1991, clla,        cll,        cmast91,  cmast91,  cmaster_state,  init_cll,        ROT0, "Dyna / TAB Austria", "Cuty Line Limited (ver.1.30, CLLJ, set 1)",  0,                   layout_cmv4 ) // needs verifying dips, missing girls
+GAMEL( 1991, cllb,        cll,        cmast91,  cmast91,  cmaster_state,  init_cll,        ROT0, "Dyna / TAB Austria", "Cuty Line Limited (ver.1.30, CLLJ, set 2)",  0,                   layout_cmv4 ) // needs verifying dips, missing girls
+GAMEL( 1996, cmast97,     0,          cmast97,  cmast97,  cmast97_state,  init_cm97,       ROT0, "Dyna",               "Cherry Master '97 (V1.7, set 1)",            0,                   layout_cmast97 )
+GAMEL( 1997, cmast97a,    cmast97,    cmast97,  cmast97a, cmast97_state,  empty_init,      ROT0, "Dyna",               "Cherry Master '97 (V1.7, set 2, no girls)",  0,                   layout_cmast97 )
+GAMEL( 1996, cmast97b,    cmast97,    cmast97,  cmast97a, cmast97_state,  empty_init,      ROT0, "Dyna",               "Cherry Master '97 (V1.7, set 3, no girls)",  0,                   layout_cmast97 )
+GAMEL( 1996, cmast97i,    cmast97,    cmast97,  cmast97i, cmast97_state,  empty_init,      ROT0, "Dyna",               "Cheri Mondo '97 (V1.4I)",                    0,                   layout_cmast97 )
+GAMEL( 1997, jpknight,    0,          jpknight, cmast97a, cmast97_state,  empty_init,      ROT0, "Dyna / R-Stone",     "Jackpot Knight (V1.1)",                      0,                   layout_cmast97 ) // check inputs
 
 // Dyna CM99 hardware (dynamic banking)
 GAMEL( 1999, cmast99,    0,        cm99,     cmast99,  cmaster_state,  init_cm99,      ROT0, "Dyna",              "Cherry Master '99 (QL-1 V9B.00)",             MACHINE_NOT_WORKING,   layout_cmv4 )
