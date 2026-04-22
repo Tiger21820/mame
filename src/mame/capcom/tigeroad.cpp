@@ -25,7 +25,6 @@ TODO:
   A full playthrough takes about half an hour. A faster way to test it is by
   enabling all the cheats while running MAME unthrottled, and 'play' by looking
   at the minimap. This comes with the risk that cheats might affect the bug.
-- what's up with the OBJ RAM test going up to 0xfe1807? address mirror?
 
 BTANB:
 - race track fg tiles have priority over minimap in f1dream
@@ -111,7 +110,7 @@ TIMER_DEVICE_CALLBACK_MEMBER(tigeroad_state::scanline)
 u8 f1dream_state::mcu_shared_r(offs_t offset)
 {
 	if (!BIT(m_mcu_p3, 5))
-		return m_maincpu->space(AS_PROGRAM).read_byte(0xffffe0 | offset << 1 | 1);
+		return m_maincpu->space(AS_PROGRAM).read_byte(0xfffe0 | offset << 1 | 1);
 	else
 		return 0xff;
 }
@@ -119,14 +118,17 @@ u8 f1dream_state::mcu_shared_r(offs_t offset)
 void f1dream_state::mcu_shared_w(offs_t offset, u8 data)
 {
 	if (!BIT(m_mcu_p3, 5))
-		m_maincpu->space(AS_PROGRAM).write_byte(0xffffe0 | offset << 1 | 1, data);
+		m_maincpu->space(AS_PROGRAM).write_byte(0xfffe0 | offset << 1 | 1, data);
 }
 
 void f1dream_state::mcu_out3_w(u8 data)
 {
 	// toggles at the end of interrupt
 	if (BIT(m_mcu_p3, 0) && !BIT(data, 0))
+	{
+		m_mcu->set_input_line(MCS51_INT0_LINE, CLEAR_LINE);
 		m_maincpu->resume(SUSPEND_REASON_HALT);
+	}
 
 	if (BIT(m_mcu_p3, 6) && !BIT(data, 6))
 		m_soundlatch->write(m_soundlatch_data);
@@ -136,10 +138,13 @@ void f1dream_state::mcu_out3_w(u8 data)
 
 void f1dream_state::to_mcu_w(u16 data)
 {
-	m_mcu->set_input_line(MCS51_INT0_LINE, HOLD_LINE);
+	m_mcu->set_input_line(MCS51_INT0_LINE, ASSERT_LINE);
 
 	// after triggering this address there are one or two NOPs in the 68k code, then it expects the response to be ready
 	m_maincpu->suspend(SUSPEND_REASON_HALT, true);
+
+	// enough time for the MCU interrupt routine to finish
+	machine().scheduler().perfect_quantum(attotime::from_usec(500));
 }
 
 
@@ -147,27 +152,31 @@ void f1dream_state::to_mcu_w(u16 data)
 
 void tigeroad_state::main_map(address_map &map)
 {
-	map(0x000000, 0x03ffff).rom();
+	map.global_mask(0xfffff);
+	map(0x00000, 0x3ffff).rom();
 
-	map(0xfe0800, 0xfe0cff).ram().share("spriteram");
-	map(0xfe0d00, 0xfe1807).ram(); // still part of OBJ RAM
-	map(0xfe4000, 0xfe4001).portr("P1_P2");
-	map(0xfe4000, 0xfe4000).w(FUNC(tigeroad_state::videoctrl_w)); // char bank, coin counters, + ?
-	map(0xfe4002, 0xfe4003).portr("SYSTEM");
-	map(0xfe4002, 0xfe4002).w(m_soundlatch, FUNC(generic_latch_8_device::write));
-	map(0xfe4004, 0xfe4005).portr("DSW");
-	map(0xfe8000, 0xfe8003).w(FUNC(tigeroad_state::scroll_w));
-	map(0xfe800e, 0xfe800f).w(m_spriteram, FUNC(buffered_spriteram16_device::write)); // should only work in vblank
-	map(0xfec000, 0xfec7ff).ram().w(FUNC(tigeroad_state::videoram_w)).share("videoram");
+	// valid sprite data from 0x800-0xcff (sprite DMA only copies that section)
+	map(0xe0000, 0xe07ff).mirror(0x3000).ram();
+	map(0xe0800, 0xe0cff).mirror(0x3000).ram().share("spriteram");
+	map(0xe0d00, 0xe0fff).mirror(0x3000).ram();
 
-	map(0xff8000, 0xff87ff).ram().w(m_palette, FUNC(palette_device::write16)).share("palette");
-	map(0xffc000, 0xffffff).ram();
+	map(0xe4000, 0xe4001).portr("P1_P2");
+	map(0xe4000, 0xe4000).w(FUNC(tigeroad_state::videoctrl_w)); // char bank, coin counters, + ?
+	map(0xe4002, 0xe4003).portr("SYSTEM");
+	map(0xe4002, 0xe4002).w(m_soundlatch, FUNC(generic_latch_8_device::write));
+	map(0xe4004, 0xe4005).portr("DSW");
+	map(0xe8000, 0xe8003).w(FUNC(tigeroad_state::scroll_w));
+	map(0xe800e, 0xe800f).w(m_spriteram, FUNC(buffered_spriteram16_device::write)); // should only work in vblank
+	map(0xec000, 0xec7ff).ram().w(FUNC(tigeroad_state::videoram_w)).share("videoram");
+
+	map(0xf8000, 0xf87ff).ram().w(m_palette, FUNC(palette_device::write16)).share("palette");
+	map(0xfc000, 0xfffff).ram();
 }
 
 void f1dream_state::f1dream_map(address_map &map)
 {
 	main_map(map);
-	map(0xfe4002, 0xfe4003).w(FUNC(f1dream_state::to_mcu_w));
+	map(0xe4002, 0xe4003).w(FUNC(f1dream_state::to_mcu_w));
 }
 
 void f1dream_state::f1dream_mcu_data(address_map &map)
@@ -180,29 +189,16 @@ void pushman_state::pushman_map(address_map &map)
 {
 	main_map(map);
 
-	map(0x060000, 0x060007).r(FUNC(pushman_state::mcu_comm_r));
-	map(0x060000, 0x060003).w(FUNC(pushman_state::pushman_mcu_comm_w));
+	map(0x60000, 0x60007).r(FUNC(pushman_state::mcu_comm_r));
+	map(0x60000, 0x60003).w(FUNC(pushman_state::pushman_mcu_comm_w));
 }
 
 void pushman_state::bballs_map(address_map &map)
 {
-	map.global_mask(0xfffff);
-	map(0x00000, 0x3ffff).rom();
-	map(0x60000, 0x60007).r(FUNC(pushman_state::mcu_comm_r));
-	map(0x60000, 0x60001).w(FUNC(pushman_state::bballs_mcu_comm_w));
-	// are these mirror addresses or does this PCB have a different addressing?
-	map(0xe0800, 0xe17ff).ram().share("spriteram");
-	map(0xe4000, 0xe4001).portr("P1_P2");
-	map(0xe4000, 0xe4000).w(FUNC(pushman_state::videoctrl_w));
-	map(0xe4002, 0xe4003).portr("SYSTEM");
-	map(0xe4002, 0xe4002).w(m_soundlatch, FUNC(generic_latch_8_device::write));
-	map(0xe4004, 0xe4005).portr("DSW");
-	map(0xe8000, 0xe8003).w(FUNC(pushman_state::scroll_w));
-	map(0xe800e, 0xe800f).w(m_spriteram, FUNC(buffered_spriteram16_device::write));
-	map(0xec000, 0xec7ff).ram().w(FUNC(pushman_state::videoram_w)).share("videoram");
+	pushman_map(map);
 
-	map(0xf8000, 0xf87ff).ram().w(m_palette, FUNC(palette_device::write16)).share("palette");
-	map(0xfc000, 0xfffff).ram();
+	map(0x60000, 0x60001).w(FUNC(pushman_state::bballs_mcu_comm_w));
+	map(0x60002, 0x60003).unmapw();
 }
 
 // Capcom games ONLY
