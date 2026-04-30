@@ -6,7 +6,7 @@ TODO:
 - Has background GFX cutoffs (gameplay and service mode);
 - LED N/G;
 - complete I/O;
-- hopper (eventually goes payout error);
+- verify hopper;
 - Allegedly should have language select somewhere (Chinese, Korean, English, Japanese);
 
 ===================================================================================================
@@ -154,6 +154,7 @@ Notes:
 #include "emu.h"
 
 #include "cpu/sh/sh7042.h"
+#include "machine/ticket.h"
 #include "sound/x1_010.h"
 #include "video/x1_020_dx_101.h"
 
@@ -172,6 +173,7 @@ public:
 		: driver_device(mconfig, type, tag)
 		, m_maincpu(*this, "maincpu")
 		, m_video(*this, "video")
+		, m_hopper(*this, "hopper")
 		, m_in(*this, "IN%u", 0U)
 		, m_medal(*this, "MEDAL%u", 0U)
 		, m_x1rom(*this, "x1rom")
@@ -190,6 +192,7 @@ protected:
 private:
 	required_device<sh7043a_device> m_maincpu;
 	required_device<x1_020_dx_101_device> m_video;
+	required_device<hopper_device> m_hopper;
 	required_ioport_array<6> m_in;
 	required_ioport_array<8> m_medal;
 	required_memory_region m_x1rom;
@@ -235,7 +238,14 @@ void sg_vga_state::hplanet_program_map(address_map &map)
 	map(0x440000, 0x440003).lr32(
 		NAME([this] () { return 0xff00ff00 | (m_in[1]->read() << 16) | m_in[0]->read(); })
 	);
-	map(0x440004, 0x440007).noprw(); // RMW, unknown purpose, noisy
+	map(0x440004, 0x440007).nopr().lw32(NAME([this] (offs_t offset, u32 data, u32 mem_mask) { // RMW, unknown purpose, noisy
+		if (data & 0xfffeffff)
+			logerror("$%06x: warning write %08x & %08x\n", offset * 4 + 0x440004, data, mem_mask);
+		if (ACCESSING_BITS_16_31)
+		{
+			m_hopper->motor_w(BIT(data, 16));
+		}
+	}));
 	map(0x460000, 0x460003).lr32(
 		NAME([this] () { return 0xff00ff00 | (m_in[3]->read() << 16) | m_in[2]->read(); })
 	);
@@ -340,7 +350,7 @@ static INPUT_PORTS_START( hplanet )
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_NAME("White Button (Choose)")
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME("Red Button (Enter)")
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_NAME("Gun")
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_OTHER ) // hopper
+	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_CUSTOM ) PORT_READ_LINE_DEVICE_MEMBER("hopper", FUNC(hopper_device::line_r))
 	PORT_DIPNAME( 0x20, 0x20, "IN1" )
 	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
@@ -507,6 +517,61 @@ static INPUT_PORTS_START( hplanet )
 	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_UNUSED )
 INPUT_PORTS_END
 
+static INPUT_PORTS_START( shootpar )
+	PORT_INCLUDE(hplanet)
+
+	// for reasons, shootpar has the medal sensor moved by one if compared to the other games
+	PORT_MODIFY("MEDAL3")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_UNUSED )
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 03")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 08")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 13")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 18")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 23")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 28")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 33")
+
+	PORT_MODIFY("MEDAL4")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_UNUSED )
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 04")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 09")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 14")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 19")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 24")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 29")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 34")
+
+	PORT_MODIFY("MEDAL5")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_UNUSED )
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 05")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 10")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 15")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 20")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 25")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 30")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 35")
+
+	PORT_MODIFY("MEDAL6")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 01")
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 06")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 11")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 16")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 21")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 26")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 31")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 36")
+
+	PORT_MODIFY("MEDAL7")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 02")
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 07")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 12")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 17")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 22")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 27")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 32")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 37")
+INPUT_PORTS_END
+
 // 3 irqs:
 // 0 vblank
 // 1 may be raster irq like other Namco games (unused?)
@@ -520,6 +585,8 @@ void sg_vga_state::sg_vga(machine_config &config)
 	m_maincpu->read_porte().set(FUNC(sg_vga_state::pe_r));
 	m_maincpu->write_porte().set(FUNC(sg_vga_state::pe_w));
 	m_maincpu->read_portf().set(FUNC(sg_vga_state::pf_r));
+
+	HOPPER(config, m_hopper, attotime::from_msec(100));
 
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
 	screen.set_refresh_hz(60);
@@ -630,6 +697,6 @@ ROM_END
 } // anonymous namespace
 
 
-GAME( 2000, galfever, 0, galfever, hplanet, sg_vga_state, empty_init, ROT0, "Namco", "Galaxian Fever (Japan, ver 1.28)",    MACHINE_IMPERFECT_GRAPHICS | MACHINE_NOT_WORKING )
-GAME( 2000, shootpar, 0, shootpar, hplanet, sg_vga_state, empty_init, ROT0, "Namco", "Shooting Paradise (Japan, ver 1.10)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NOT_WORKING )
-GAME( 2001, hplanet,  0, hplanet,  hplanet, sg_vga_state, empty_init, ROT0, "Namco", "Happy Planet (Japan, ver 1.00)",      MACHINE_IMPERFECT_GRAPHICS | MACHINE_NOT_WORKING )
+GAME( 2000, galfever, 0, galfever, hplanet,  sg_vga_state, empty_init, ROT0, "Namco", "Galaxian Fever (Japan, ver 1.28)",    MACHINE_IMPERFECT_GRAPHICS | MACHINE_NOT_WORKING )
+GAME( 2000, shootpar, 0, shootpar, shootpar, sg_vga_state, empty_init, ROT0, "Namco", "Shooting Paradise (Japan, ver 1.10)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NOT_WORKING )
+GAME( 2001, hplanet,  0, hplanet,  hplanet,  sg_vga_state, empty_init, ROT0, "Namco", "Happy Planet (Japan, ver 1.00)",      MACHINE_IMPERFECT_GRAPHICS | MACHINE_NOT_WORKING )
