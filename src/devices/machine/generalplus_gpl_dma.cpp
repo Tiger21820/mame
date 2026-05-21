@@ -25,6 +25,7 @@ void gpl_dma_device::device_start()
 	save_item(NAME(m_dma_params));
 	save_item(NAME(m_dma_latched));
 	save_item(NAME(m_system_dma_memtype));
+	save_item(NAME(m_dma_status));
 }
 
 void gpl_dma_device::device_reset()
@@ -39,6 +40,7 @@ void gpl_dma_device::device_reset()
 	}
 
 	m_system_dma_memtype = 0x0000;
+	m_dma_status = 0x0000;
 }
 
 
@@ -149,13 +151,14 @@ void gpl_dma_device::system_dma_params_channel3_w(offs_t offset, u16 data)
 u16 gpl_dma_device::system_dma_status_r()
 {
 	LOGMASKED(LOG_GCM394_SYSDMA, "%s:sunplus_gcm394_base_device::system_dma_status_r (7abf)\n", machine().describe_context());
-	return 0x00ff;
+	return m_dma_status;
 }
 
 void gpl_dma_device::system_dma_status_w(u16 data)
 {
 	// writes to the low 4 bits clear the channel complete interrupt flags
 	LOGMASKED(LOG_GCM394_SYSDMA, "%s:sunplus_gcm394_base_device::system_dma_status_w %04x\n", machine().describe_context(), data);
+	m_dma_status &= ~data;
 }
 
 // m_dma_params[0] is P_DMA_Ctrl
@@ -199,7 +202,10 @@ void gpl_dma_device::trigger_systemm_dma(int channel)
 	else if ((mode & 0x50) == 0x10)
 		destdelta = -1;
 
-	LOGMASKED(LOG_GCM394_SYSDMA, "%s:possible DMA operation with params mode:%04x source:%08x (word offset) dest:%08x (word offset) length:%08x (words)\n", machine().describe_context(), mode, source, dest, length );
+	static const char* tmode_names[4] = { "Memory to Memory", "Memory to IO", "IO to Memory", "Reserved" };
+	u8 td = (mode & 0x0c00) >> 10;
+
+	LOGMASKED(LOG_GCM394_SYSDMA, "%s:possible DMA operation with params mode:%04x (TD is %s) source:%08x (word offset) dest:%08x (word offset) length:%08x (words)\n", machine().describe_context(), mode, tmode_names[td], source, dest, length );
 
 	// wrlshunt transfers ROM to RAM, all RAM write addresses have 0x800000 in the destination set
 
@@ -211,7 +217,7 @@ void gpl_dma_device::trigger_systemm_dma(int channel)
 		u16 val;
 		if (mode & 0x1000)
 		{
-			val = (m_space_read_cb(source) & 0xFF) | (m_space_read_cb(source) << 8);
+			val = (m_space_read_cb(source) & 0xff) | (m_space_read_cb(source) << 8);
 			i++;
 		}
 		else
@@ -242,6 +248,8 @@ void gpl_dma_device::trigger_systemm_dma(int channel)
 
 	m_dma_params[1][channel] = m_dma_params[2][channel] = m_dma_params[3][channel] = m_dma_params[4][channel] = m_dma_params[5][channel] = m_dma_params[6][channel] = 0x0000;
 	m_dma_latched[channel] = false;
+
+	m_dma_status |= 1 << channel; // the flag seems to be set even if IRQs are disabled
 
 	//machine().debug_break();
 }

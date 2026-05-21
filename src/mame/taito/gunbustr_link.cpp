@@ -9,19 +9,19 @@
 
   To use this:
   * Enable Link Simulation in MAME's Machine Configuration menu.
-  * Access the game's Tet Mode Menu, and select Configuration.
+  * Access the game's Test Mode Menu, and select Configuration.
   * Set Link Play to On, and set the ID Number to 0 for one instance
     and 1 for the other instance (it helps to have separate NVRAM
-	directories for the two instances).
+    directories for the two instances).
   * Start one instance in listening mode by setting the comm_localhost
     to the listening address and comm_remotehost to an empty string.
   * Start the other instance in connecting mode by setting
     comm_remotehost to the address to connect to (you should probably
-	set comm_localhost to an empty string, but if you set it, the
-	connecting socket will be bound to this address).
+    set comm_localhost to an empty string, but if you set it, the
+    connecting socket will be bound to this address).
   * Reset the two instances at approximately the same time, it may
     help to reset the instance with ID 0 slightly before resetting the
-	instance with ID 1.
+    instance with ID 1.
 
   mame gunbustr -comm_localhost 0.0.0.0 -comm_localport 1234 -comm_remotehost ""
   mame gunbustr -comm_localhost "" -comm_remotehost 127.0.0.1 -comm_remoteport 1234
@@ -140,20 +140,11 @@ public:
 
 		if (m_remote)
 		{
-			if (m_local)
-			{
-				m_sock.open(m_local->protocol(), err);
-				if (!err)
-					m_sock.set_option(asio::ip::tcp::no_delay(true), err);
-				if (!err)
-					m_sock.bind(*m_local, err);
-			}
-			else
-			{
-				m_sock.open(m_remote->protocol(), err);
-				if (!err)
-					m_sock.set_option(asio::ip::tcp::no_delay(true), err);
-			}
+			m_sock.open((m_local ? m_local : m_remote)->protocol(), err);
+			if (!err)
+				m_sock.set_option(asio::ip::tcp::no_delay(true), err);
+			if (!err && m_local)
+				m_sock.bind(*m_local, err);
 		}
 		else
 		{
@@ -307,16 +298,11 @@ private:
 					if (!err && !m_stopping)
 					{
 						std::error_code e;
-						if (m_local)
-						{
-							m_sock.open(m_local->protocol(), e);
-							if (!err)
-								m_sock.bind(*m_local, e);
-						}
-						else
-						{
-							m_sock.open(m_remote->protocol(), e);
-						}
+						m_sock.open((m_local ? m_local : m_remote)->protocol(), e);
+						if (!e)
+							m_sock.set_option(asio::ip::tcp::no_delay(true), e);
+						if (!e && m_local)
+							m_sock.bind(*m_local, e);
 						if (e)
 						{
 							LOG("Error opening socket: %s\n", e.message());
