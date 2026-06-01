@@ -56,6 +56,10 @@
 
 #include "debugger.h"
 
+#include "endianness.h"
+
+#include <bit>
+
 #define VERBOSE 0
 #include "logmacro.h"
 
@@ -146,7 +150,7 @@ private:
 	u8 m_irq_active[4];
 	u8 m_irq_mask[4];
 
-	util::endian_cast<u32, u16, util::endianness::big> m_nram;
+	util::endian_cast<u32, u16, std::endian::big> m_nram;
 };
 
 class luna88k_state : public luna_88k_state_base
@@ -763,7 +767,7 @@ u32 luna_88k_state_base::irq_ctl_r(offs_t offset)
 	u8 const active = m_irq_active[offset] & (0x80 | m_irq_mask[offset] << 1);
 	if (active)
 	{
-		unsigned const level = 31 - count_leading_zeros_32(active);
+		unsigned const level = std::bit_width(active) - 1;
 
 		data |= (level << 29);
 	}
