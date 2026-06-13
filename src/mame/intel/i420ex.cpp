@@ -18,10 +18,16 @@ TODO:
 - Keyboard fails working in places (same as ls5amvp3, forgets to read at $60 for irq ack);
 - CMOS memory sets System Time with illegal hour
   (workaround: fix it manually then "Exit Saving Changes");
-- AZ08 / AZ07 BIOSes: goes "Auto Configuration Error" with PCI bus, propagate that if cards are
-  hooked up;
+- entrada AZ08 / AZ07 BIOSes: goes "Auto Configuration Error" with PCI bus, propagate to cards
+  if they are hooked up.
+\- It access I/O space $c24d which means it's trying a Configuration Space Access
+   Mechanism #2 (cfr. i82434lx_pcmc) for a unknown device in pci:02.0 with no actual $cf8 byte
+   unlock (PISA riser? non-canonical host device access where 05.0 ^ 7 = 2? ib?)
+   NOTE: a486ap4 just goes scanning the full range of $cxxx, where it checks if there's a valid
+   vendor ID then tries to write then read $cx34-$cx37 (a.k.a. the otherwise r/o capptr_r)
 - isa1:sb16_lle: DMA crashes with high DMA (unsupported?)
 - serport0:logitech_mouse: fails freedos13 init on every odd boot;
+- a486ap4: ugly startup buzzer for work RAM check;
 
 **************************************************************************************************/
 
@@ -187,8 +193,9 @@ void i420ex_state::entrada(machine_config &config)
 	PCI_SLOT(config, "pci:1", pci_cards, 7,  0, 1, 2, 3, nullptr);
 	PCI_SLOT(config, "pci:2", pci_cards, 8,  1, 2, 3, 0, nullptr);
 
-	ISA16_SLOT(config, "board1", "ib:isabus", pc_isa_onboard, "superio", true).set_option_machine_config("superio", intel_superio_config);
-	ISA16_SLOT(config, "isa1", "ib:isabus", pc_isa16_cards, nullptr, false);
+	// FIXME: determine ISA bus clock
+	ISA16_SLOT(config, "board1", 0, "ib:isabus", pc_isa_onboard, "superio", true).set_option_machine_config("superio", intel_superio_config);
+	ISA16_SLOT(config, "isa1",   0, "ib:isabus", pc_isa16_cards, nullptr, false);
 
 	rs232_port_device& serport0(RS232_PORT(config, "serport0", isa_com, "logitech_mouse"));
 	serport0.rxd_handler().set("board1:superio", FUNC(i82091aa_device::rxd1_w));
@@ -214,12 +221,13 @@ void i420ex_state::a486ap4(machine_config &config)
 	PCI_SLOT(config, "pci:3", pci_cards, 9,  2, 3, 0, 1, nullptr);
 	PCI_SLOT(config, "pci:4", pci_cards, 10, 3, 0, 1, 2, nullptr);
 
-	ISA16_SLOT(config, "isa1", "ib:isabus", pc_isa16_cards, "fdc_smc", false);
-	ISA16_SLOT(config, "isa2", "ib:isabus", pc_isa16_cards, "comat", false);
-	ISA16_SLOT(config, "isa3", "ib:isabus", pc_isa16_cards, "lpt", false);
-	ISA16_SLOT(config, "isa4", "ib:isabus", pc_isa16_cards, nullptr, false);
+	// FIXME: determine ISA bus clock
+	ISA16_SLOT(config, "isa1", 0, "ib:isabus", pc_isa16_cards, "fdc_smc", false);
+	ISA16_SLOT(config, "isa2", 0, "ib:isabus", pc_isa16_cards, "comat", false);
+	ISA16_SLOT(config, "isa3", 0, "ib:isabus", pc_isa16_cards, "lpt", false);
+	ISA16_SLOT(config, "isa4", 0, "ib:isabus", pc_isa16_cards, nullptr, false);
 	// TODO: VLB really
-	ISA16_SLOT(config, "isa5", "ib:isabus", pc_isa16_cards, "svga_et4k", false);
+	ISA16_SLOT(config, "isa5", 0, "ib:isabus", pc_isa16_cards, "svga_et4k", false);
 }
 
 

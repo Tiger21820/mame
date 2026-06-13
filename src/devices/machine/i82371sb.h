@@ -11,17 +11,17 @@
 #include "bus/ata/ataintf.h"
 #include "bus/isa/isa.h"
 
+#include "machine/am9517a.h"
+#include "machine/ds128x.h"
 #include "machine/idectrl.h"
 #include "machine/ins8250.h"
-#include "machine/ds128x.h"
+#include "machine/nvram.h"
 #include "machine/pic8259.h"
 #include "machine/pit8253.h"
+#include "machine/ram.h"
 
 #include "sound/spkrdev.h"
-#include "machine/ram.h"
-#include "machine/nvram.h"
 
-#include "machine/am9517a.h"
 
 class i82371sb_isa_device : public pci_device
 {
@@ -72,7 +72,7 @@ public:
 	void pc_irq15_w(int state);
 
 protected:
-	i82371sb_isa_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock = 0);
+	i82371sb_isa_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
 
 	virtual void device_add_mconfig(machine_config & config) override;
 	virtual void device_config_complete() override;
@@ -257,7 +257,7 @@ public:
 	void set_cpu_tag(T &&tag) { m_maincpu.set_tag(std::forward<T>(tag)); }
 
 protected:
-	i82371sb_ide_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock = 0);
+	i82371sb_ide_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock);
 
 	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
 	virtual void device_config_complete() override;

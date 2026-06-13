@@ -19642,6 +19642,7 @@ galaxiani
 galaxianiii
 galaxianm
 galaxianmo
+galaxianoly
 galaxianrp
 galaxiant
 galaxrcgg
@@ -20093,7 +20094,6 @@ pokemech
 pokgoget
 punifrnd
 punij1m
-punij1pk
 punij1pu
 punij2pk
 punirune
@@ -20615,6 +20615,10 @@ lk3000
 @source:handheld/monty.cpp
 mmonty
 monty
+
+@source:handheld/mylife.cpp
+mylife
+mylifei
 
 @source:handheld/pensebem.cpp
 pbem2017
@@ -22772,6 +22776,10 @@ basic52
 @source:intel/i420ex.cpp
 a486ap4
 entrada
+
+@source:intel/i430lx.cpp
+ga586ip
+sy029c2
 
 @source:intel/imds2.cpp
 imds2
@@ -30433,6 +30441,8 @@ re800v1a
 re800v3
 winner81
 winner81b
+winner81c
+winner81d
 winner82
 
 @source:misc/cosmos_playc8f.cpp
@@ -35846,6 +35856,7 @@ armwrest
 punchita
 punchout
 punchouta
+punchoutah
 punchoutj
 spnchout
 spnchouta
@@ -37455,6 +37466,7 @@ pleiadsb2
 pleiadsgmp
 pleiadsi
 pleiadsia
+pleiadsmm
 pleiadsn
 pleiadss
 survival
@@ -42273,6 +42285,7 @@ carnivalh
 carnivalha
 carnivalmm
 colision
+deepscch
 depthch
 depthcho
 digger
@@ -42675,6 +42688,7 @@ usclssic
 @source:seta/hanaawas.cpp
 hanaawas
 hanaawasa
+hanaawmh
 
 @source:seta/hanadojo.cpp
 hanadojo
@@ -42832,10 +42846,11 @@ renju
 
 @source:seta/speedatk.cpp
 daifugo
-hanaren2
+hana6
+hana6bl
+hanaren
 harashi
 speedatk
-unkalba
 
 @source:seta/speglsht.cpp
 speglsht
@@ -45058,6 +45073,7 @@ victor6a
 victor6b
 
 @source:subsino/subsino_kr_h8.cpp
+coolbi
 modcart
 
 @source:subsino/subsino2.cpp
@@ -45741,6 +45757,7 @@ bubbroul
 bubbroul17
 harikiri
 honooinv
+manpukuh
 packyts
 rendfgtr
 sbmjb
@@ -46594,6 +46611,7 @@ raiga
 raigaa
 ryukendn
 ryukendna
+ryukendnb
 shadoww
 shadowwa
 stratof
@@ -47625,6 +47643,7 @@ jak_dood
 jak_sbdd
 jak_spdmo
 jak_spdmoa
+jak_spdmob
 jak_ssmo
 jak_thom
 jak_thomp
@@ -49239,11 +49258,12 @@ mysticmp
 nextcent
 playball
 robotron
-robotronyo
-robotronun
-robotron87
 robotron12
+robotron87
+robotronr3
 robotrontd
+robotronun
+robotronyo
 sinistar
 sinistar2
 sinistarc

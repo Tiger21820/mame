@@ -434,8 +434,6 @@ public:
 	void mprof3(machine_config &config);
 	void apple2e(machine_config &config);
 	void apple2epal(machine_config &config);
-	void apple2ep(machine_config &config);
-	void apple2eppal(machine_config &config);
 	void apple2c(machine_config &config);
 	void apple2cpal(machine_config &config);
 	void tk3000(machine_config &config);
@@ -516,6 +514,7 @@ private:
 	int m_accel_stage;
 	u32 m_accel_speed;
 	u8 m_accel_slotspk, m_accel_gameio, m_laser_speed;
+	memory_passthrough_handler m_accel_tap;
 
 	emu_timer *m_strobe_timer;
 	u8  m_next_strobe;
@@ -557,8 +556,8 @@ private:
 	void raise_irq(int irq);
 	void lower_irq(int irq);
 	void update_iic_mouse();
-	void accel_full_speed();
-	void accel_normal_speed();
+	void accel_update_speed();
+	void accel_reset();
 	void accel_temp_delay(int ms, bool condition);
 	void accel_stop_delay();
 	void accel_slot(int slot);
@@ -1267,22 +1266,12 @@ void apple2e_state::machine_reset()
 	m_yirq = false;
 	m_mockingboard4c = false;
 	m_cec_bank = 0;
-	m_accel_unlocked = false;
-	m_accel_stage = 0;
-	m_accel_slotspk = 0xE4; // slots 7, 6, 5, 2 slow
-	m_accel_gameio = 0x40;  // paddle delay on
 	m_accel_present = false;
+	m_accel_unlocked = false;
 	m_accel_temp_slowdown = false;
-	m_accel_disable_delay = false;
 	m_accel_fast = false;
 	m_centronics_busy = false;
 	m_35sel = false;
-
-	// is Zip enabled?
-	if (m_sysconfig.read_safe(0) & 0x10)
-	{
-		m_accel_present = true;
-	}
 
 	// IIe prefers INTCXROM default to off, IIc has it always on
 	if (m_rom_ptr[0x3bc0] == 0x00)
@@ -1312,26 +1301,21 @@ void apple2e_state::machine_reset()
 		m_isiicplus = false;
 	}
 
-	u8 config = m_sysconfig.read_safe(0) & 0x30;
-
-	if (((config & 0x10) == 0x10) || (m_isiicplus))
+	// Zip configuration
+	if ((m_isiicplus) || (m_sysconfig.read_safe(0) & 0x10))
 	{
+		m_accel_present = true;
 		m_accel_speed = 4000000;    // Zip speed, set if present, even if not active initially
-
-		if (((config & 0x20) == 0x20) || (m_isiicplus))
-		{
-			accel_full_speed();
-			m_accel_fast = true;
-		}
+		accel_reset();
 	}
-
-	if (m_accel_laser)
+	else if (m_accel_laser)
 	{
 		m_accel_present = true;
 		m_accel_speed = 1021800;
 		m_accel_slotspk = 0x46; // slots 6, 2, 1 slow
 		if (m_slotdevice[5] != nullptr) m_accel_slotspk |= 0x20;
 		if (m_slotdevice[7] != nullptr) m_accel_slotspk |= 0x80;
+		m_accel_gameio = 0x00;
 	}
 
 	if (m_has_laser_mouse)
@@ -1471,6 +1455,8 @@ void apple2e_state::reset_w(int state)
 		{
 			m_reset_latch = true;
 			m_maincpu->set_input_line(INPUT_LINE_RESET, ASSERT_LINE);
+			if (m_accel_present)
+				accel_reset();
 
 			// All MMU switches off (80STORE, RAMRD, RAMWRT, INTCXROM, ALTZP, SLOTC3ROM, PAGE2, HIRES, INTC8ROM)
 			// Sather, Fig 5.13
@@ -1539,14 +1525,36 @@ void apple2e_state::reset_w(int state)
 /***************************************************************************
     I/O
 ***************************************************************************/
-void apple2e_state::accel_full_speed()
+void apple2e_state::accel_update_speed()
 {
-	m_maincpu->set_unscaled_clock(m_accel_speed);
+	if (!m_accel_fast || m_accel_temp_slowdown)
+	{
+		m_maincpu->set_unscaled_clock(m_pal ? 1016966 : 1021800, true); // re-align to PH0
+	}
+	else
+	{
+		m_maincpu->set_unscaled_clock(m_accel_speed);
+	}
 }
 
-void apple2e_state::accel_normal_speed()
+void apple2e_state::accel_reset()
 {
-	m_maincpu->set_unscaled_clock(m_pal ? 1016966 : 1021800, true); // re-align to PH0
+	if (!m_accel_laser)
+	{
+		m_accel_unlocked = false;
+		m_accel_stage = 0;
+		m_accel_slotspk = 0xE4; // slots 7, 6, 5, 2 slow
+		m_accel_gameio = 0x40;  // paddle delay on
+		m_accel_disable_delay = false;
+
+		// Zip Chip embedded firmware watches for Esc and space keys
+		// This is not emulated, config "Bootup speed" is an approximation
+		m_accel_fast = ((m_isiicplus) || (m_sysconfig.read_safe(0) & 0x20));
+		accel_update_speed();
+	}
+
+	// IIc+ firmware overwrites registers after reset
+	// Laser firmware watches for 1/2/3 keys and overwrites speed
 }
 
 void apple2e_state::accel_temp_delay(int ms, bool condition)
@@ -1554,18 +1562,17 @@ void apple2e_state::accel_temp_delay(int ms, bool condition)
 	// C05B status bit toggles even when accelerator is disabled
 	if ((m_accel_present) && (!m_accel_disable_delay) && (condition))
 	{
-		m_accel_temp_slowdown = true;
 		m_acceltimer->adjust(attotime::from_msec(ms));
-		accel_normal_speed();
+		m_accel_temp_slowdown = true;
+		accel_update_speed();
 	}
 }
 
 void apple2e_state::accel_stop_delay()
 {
-	m_accel_temp_slowdown = false;
 	m_acceltimer->adjust(attotime::never);
-	if (m_accel_fast)
-		accel_full_speed();
+	m_accel_temp_slowdown = false;
+	accel_update_speed();
 }
 
 void apple2e_state::accel_slot(int slot)
@@ -2219,11 +2226,26 @@ u8 apple2e_state::c000_r(offs_t offset)
 		// but this this is incorrect: they only exist on the IIc.
 
 		default:
-			do_io(offset);
-
-			if (m_accel_unlocked)
+			/*
+			When a Zip is present, side-effects to annunciators are skipped
+			IF the accelerator is unlocked AND the current instruction executes
+			from cache.  Cache is not emulated here, but as an approximation,
+			m_accel_fast differentiates all-cached and not-cached.
+			*/
+			if (((offset & 0xf8) != 0x58) || !m_accel_unlocked || !m_accel_fast)
 			{
-				if (offset == 0x5b) // Zip status flags
+				do_io(offset);
+			}
+
+			if (m_accel_unlocked) switch(offset)
+			{
+				case 0x58: return 0xC0; // undocumented, not floating bus
+				case 0x59: return 0x20;
+				case 0x5a: return 0x00;
+				case 0x5d: return 0x00;
+				case 0x5f: return 0x00; // clears C05B bit 6
+
+				case 0x5b: // status flags
 				{
 					// bits 0-1 are cache size; [8, 16, 32, 64]kB
 					const u8 b01 = 0x03;
@@ -2231,15 +2253,26 @@ u8 apple2e_state::c000_r(offs_t offset)
 					const u8 b3 = m_accel_temp_slowdown ? 0x08 : 0x00;
 					// bit 4 is set if the Zip is disabled
 					const u8 b4 = m_accel_fast ? 0x00 : 0x10;
-					// bit 7 is a 1.0035 millisecond clock; the value changes every 0.50175 milliseconds
-					const int time = machine().time().as_ticks(1.0F / 0.00050175F);
+					// bit 5 is set if LC caching is disabled
+					const u8 b5 = BIT(m_accel_gameio, 7) ? 0x20 : 0x00;
+					// bit 7 is a tap on the PH0 clock divided by 1024; edge every 512 cycles
+					const int time = machine().time().as_ticks((m_pal ? 1016966 : 1021800) / 512.0F);
 					const u8 b7 = (time & 1) ? 0x80 : 0x00;
-					return b7 | b4 | b3 | b01;
+					return b7 | b5 | b4 | b3 | b01;
 				}
-				else if (offset == 0x5c)
-				{
+
+				case 0x5c:
 					return m_accel_slotspk;
-				}
+
+				case 0x5e: // synthesizes state, similar to STATEREG
+					return  (m_altzp ? 0x80 : 0x00) |
+							(m_ramrd ? 0x40 : 0x00) |
+							(m_ramwrt ? 0x20 : 0x00) |
+							(m_video->get_80store() ? 0x10 : 0x00) |
+							(m_video->get_hires() ? 0x08 : 0x00) |
+							(m_video->get_page2() ? 0x04 : 0x00) |
+							(m_lcram2 ? 0x00 : 0x02) |
+							(m_lcram ? 0x00 : 0x01);
 			}
 			break;
 	}
@@ -2331,31 +2364,27 @@ void apple2e_state::laser_calc_speed()
 {
 	if (m_laser_fdc_on)
 	{
-		accel_normal_speed();
 		m_accel_fast = false;
-		return;
 	}
-
-	switch ((m_laser_speed & 0xc0) >> 6)
+	else switch ((m_laser_speed & 0xc0) >> 6)
 	{
 		case 0:
 		case 1:
-			accel_normal_speed();
 			m_accel_fast = false;
 			break;
 
 		case 2:
 			m_accel_speed = A2BUS_7M_CLOCK.value()/3;   // 2.38 MHz
 			m_accel_fast = true;
-			accel_full_speed();
 			break;
 
 		case 3:
 			m_accel_speed = A2BUS_7M_CLOCK.value()/2;   // 3.58 MHz
 			m_accel_fast = true;
-			accel_full_speed();
 			break;
 	}
+
+	accel_update_speed();
 }
 
 void apple2e_state::c000_laser_w(offs_t offset, u8 data)
@@ -2528,10 +2557,30 @@ void apple2e_state::c000_w(offs_t offset, u8 data)
 			{
 				if (data == 0x5a)
 				{
-					m_accel_stage++;
-					if (m_accel_stage == 4)
+					if (m_accel_stage == 0)
 					{
-						m_accel_unlocked = true;
+						m_accel_stage = 1;
+						m_accel_tap = m_maincpu->space(AS_PROGRAM).install_write_tap(
+							0x0000, 0xffff, "zip_unlock",
+							[this](offs_t offset, u8 &data, u8 mem_mask)
+						{
+							if(!machine().side_effects_disabled())
+							{
+								if ((offset != 0xc05a) || (data != 0x5a))
+								{
+									// any other write instruction between the first
+									// four 5A writes will invalidate the unlock
+									m_accel_stage = 0;
+									m_accel_tap.remove();
+								}
+								else if (++m_accel_stage == 4)
+								{
+									// at least four writes of 5A in succession
+									m_accel_unlocked = true;
+									m_accel_tap.remove();
+								}
+							}
+						}, &m_accel_tap);
 					}
 				}
 				else if (data == 0xa5)
@@ -2544,17 +2593,17 @@ void apple2e_state::c000_w(offs_t offset, u8 data)
 				{
 					// disable acceleration
 					m_accel_fast = false;
-					accel_normal_speed();
+					accel_update_speed();
 				}
 			}
 			do_io(offset);
 			break;
 
-		case 0x5b: // Zip full speed
+		case 0x5b: // enable acceleration
 			if (m_accel_unlocked)
 			{
 				m_accel_fast = true;
-				accel_full_speed();
+				accel_update_speed();
 			}
 			do_io(offset);
 			break;
@@ -5054,6 +5103,8 @@ void apple2e_state::apple2e_common(machine_config &config, bool enhanced, bool r
 	timer_device &timer(TIMER(config, "repttmr"));
 	timer.configure_periodic(FUNC(apple2e_state::ay3600_repeat), attotime::from_hz(15));
 
+	APPLE2_GAMEIO(config, m_gameio, apple2_gameio_device::default_options, nullptr);
+
 	/* slot devices */
 	A2BUS(config, m_a2bus);
 	m_a2bus->set_space(m_maincpu, AS_PROGRAM);
@@ -5073,9 +5124,7 @@ void apple2e_state::apple2e_common(machine_config &config, bool enhanced, bool r
 	m_a2eauxslot->set_space(m_maincpu, AS_PROGRAM);
 	m_a2eauxslot->out_irq_callback().set(FUNC(apple2e_state::a2bus_irq_w));
 	m_a2eauxslot->out_nmi_callback().set(FUNC(apple2e_state::a2bus_nmi_w));
-	A2EAUXSLOT_SLOT(config, "aux", m_a2eauxslot, apple2eaux_cards, "ext80");   // default to an extended 80-column card
-
-	APPLE2_GAMEIO(config, m_gameio, apple2_gameio_device::default_options, nullptr);
+	A2EAUXSLOT_SLOT(config, "aux", A2BUS_7M_CLOCK, m_a2eauxslot, apple2eaux_cards, "ext80");   // default to an extended 80-column card
 
 	/* softlist config for baseline A2E
 	By default, filter lists where possible to compatible disks for A2E */
@@ -5180,8 +5229,7 @@ void apple2e_state::tk3000_kstrb_w(int state)
 
 void apple2e_state::tk3000(machine_config &config)
 {
-	apple2e(config);
-	W65C02(config.replace(), m_maincpu, 1021800);
+	apple2ee(config);
 	m_maincpu->set_addrmap(AS_PROGRAM, &apple2e_state::base_map);
 
 	config.device_remove("ay3600");
@@ -5214,18 +5262,6 @@ void apple2e_state::prav8c(machine_config &config)
 	m_prav8c_kbd->reset_callback().set(FUNC(apple2e_state::reset_w));
 
 	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::PRAVETZ_8C, false, false>)));
-}
-
-void apple2e_state::apple2ep(machine_config &config)
-{
-	apple2ee(config);
-}
-
-void apple2e_state::apple2eppal(machine_config &config)
-{
-	apple2ep(config);
-	m_maincpu->set_clock(1016966);
-	m_screen->set_raw(1016966 * 14, (65 * 7) * 2, 0, (40 * 7) * 2, 312, 0, 192);
 }
 
 void apple2e_state::apple2c(machine_config &config)
@@ -5346,11 +5382,14 @@ void apple2e_state::apple2c_mem_pal(machine_config &config)
 void apple2e_state::laser128(machine_config &config)
 {
 	apple2c(config);
-	W65C02(config.replace(), m_maincpu, 1021800);
 	m_maincpu->set_addrmap(AS_PROGRAM, &apple2e_state::laser128_map);
-	m_maincpu->set_dasm_override(FUNC(apple2e_state::dasm_trampoline));
 
 	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::IIE, true, false>)));
+
+	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
+	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
+	OUTPUT_LATCH(config, m_printer_out);
+	m_printer_conn->set_output_latch(*m_printer_out);
 
 	IWM(config, m_iwm, A2BUS_7M_CLOCK, 1021800 * 2);
 	m_iwm->phases_cb().set(FUNC(apple2e_state::phases_w));
@@ -5370,22 +5409,20 @@ void apple2e_state::laser128(machine_config &config)
 	A2BUS_LASER128(config, "sl6", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
 	A2BUS_SLOT(config, "sl7", A2BUS_7M_CLOCK, m_a2bus, apple2e_cards, nullptr);
 
-	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
-	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
-	OUTPUT_LATCH(config, m_printer_out);
-	m_printer_conn->set_output_latch(*m_printer_out);
-
 	m_ram->set_default_size("128K").set_extra_options("128K, 384K, 640K, 896K, 1152K");
 }
 
 void apple2e_state::laser128o(machine_config &config)
 {
 	apple2c(config);
-	W65C02(config.replace(), m_maincpu, 1021800);
 	m_maincpu->set_addrmap(AS_PROGRAM, &apple2e_state::laser128_map);
-	m_maincpu->set_dasm_override(FUNC(apple2e_state::dasm_trampoline));
 
 	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::IIE, true, false>)));
+
+	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
+	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
+	OUTPUT_LATCH(config, m_printer_out);
+	m_printer_conn->set_output_latch(*m_printer_out);
 
 	IWM(config, m_iwm, A2BUS_7M_CLOCK, 1021800 * 2);
 	m_iwm->phases_cb().set(FUNC(apple2e_state::phases_w));
@@ -5405,11 +5442,6 @@ void apple2e_state::laser128o(machine_config &config)
 	A2BUS_LASER128_ORIG(config, "sl6", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
 	A2BUS_SLOT(config, "sl7", A2BUS_7M_CLOCK, m_a2bus, apple2e_cards, nullptr);
 
-	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
-	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
-	OUTPUT_LATCH(config, m_printer_out);
-	m_printer_conn->set_output_latch(*m_printer_out);
-
 	// original Laser 128 doesn't have the Slinky memory expansion
 	m_ram->set_default_size("128K").set_extra_options("128K");
 }
@@ -5417,11 +5449,14 @@ void apple2e_state::laser128o(machine_config &config)
 void apple2e_state::laser128ex2(machine_config &config)
 {
 	apple2c(config);
-	W65C02(config.replace(), m_maincpu, 1021800);
 	m_maincpu->set_addrmap(AS_PROGRAM, &apple2e_state::laser128_map);
-	m_maincpu->set_dasm_override(FUNC(apple2e_state::dasm_trampoline));
 
 	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::IIE, true, false>)));
+
+	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
+	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
+	OUTPUT_LATCH(config, m_printer_out);
+	m_printer_conn->set_output_latch(*m_printer_out);
 
 	IWM(config, m_iwm, A2BUS_7M_CLOCK, 1021800 * 2);
 	m_iwm->phases_cb().set(FUNC(apple2e_state::phases_w));
@@ -5441,11 +5476,6 @@ void apple2e_state::laser128ex2(machine_config &config)
 	A2BUS_LASER128(config, "sl6", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
 	A2BUS_LASER128(config, "sl7", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
 
-	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
-	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
-	OUTPUT_LATCH(config, m_printer_out);
-	m_printer_conn->set_output_latch(*m_printer_out);
-
 	m_ram->set_default_size("128K").set_extra_options("128K, 384K, 640K, 896K, 1152K");
 
 	// RTC: Oki M6242
@@ -5457,11 +5487,20 @@ void apple2e_state::ace500(machine_config &config)
 	apple2e_common(config, true, false);
 	subdevice<software_list_device>("flop_a2_orig")->set_filter("A2C");  // Filter list to compatible disks for this machine.
 
-	W65C02(config.replace(), m_maincpu, 1021800);
 	m_maincpu->set_addrmap(AS_PROGRAM, &apple2e_state::ace500_map);
-	m_maincpu->set_dasm_override(FUNC(apple2e_state::dasm_trampoline));
 
 	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::IIE, true, true>)));
+
+	config.device_remove("tape");
+	config.device_remove("gameio");
+	APPLE2_GAMEIO(config, m_gameio, apple2_gameio_device::joystick_options, nullptr);
+	config.device_remove("sl1");
+	config.device_remove("sl2");
+	config.device_remove("sl3");
+	config.device_remove("sl4");
+	config.device_remove("sl5");
+	config.device_remove("sl6");
+	config.device_remove("sl7");
 
 	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
 	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
@@ -5479,18 +5518,9 @@ void apple2e_state::ace500(machine_config &config)
 	modem.dsr_handler().set(m_acia1, FUNC(mos6551_device::write_dsr));
 	modem.cts_handler().set(m_acia1, FUNC(mos6551_device::write_cts));
 
-	config.device_remove("tape");
-	config.device_remove("sl1");
-	config.device_remove("sl2");
-	config.device_remove("sl3");
-	config.device_remove("sl4");
-	config.device_remove("sl5");
-	config.device_remove("sl6");
-	config.device_remove("sl7");
-	config.device_remove("aux");
-
 	A2BUS_IWM(config, "sl6", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
 
+	config.device_remove("aux");
 	A2EAUX_FRANKLIN384(config, "aux", A2BUS_7M_CLOCK).set_onboard(m_a2eauxslot);
 
 	m_ram->set_default_size("128K");
@@ -5498,33 +5528,35 @@ void apple2e_state::ace500(machine_config &config)
 
 void apple2e_state::ace2200(machine_config &config)
 {
-	apple2e_common(config, false, false);
-	W65C02(config.replace(), m_maincpu, 1021800);
+	apple2e_common(config, true, false);
 	m_maincpu->set_addrmap(AS_PROGRAM, &apple2e_state::ace2200_map);
-	m_maincpu->set_dasm_override(FUNC(apple2e_state::dasm_trampoline));
 
 	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::IIE, true, true>)));
-
-	// The Ace 2000 series has 3 physical slots, 2, 4/7, and 5.
-	// 4/7 can be slot 4 or 7 via a jumper; we fix it to slot 7 here
-	// because that's most useful (for e.g. cffa202).
-	config.device_remove("sl1");
-	config.device_remove("sl3");
-	config.device_remove("sl4");
-	config.device_remove("sl5");
-	config.device_remove("sl6");
-
-	A2BUS_ACE2X00_SLOT1(config, "sl1", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
-	A2BUS_SLOT(config, "sl5", A2BUS_7M_CLOCK, m_a2bus, apple2e_cards, "mockingboard");
-	A2BUS_ACE2X00_SLOT6(config, "sl6", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
-
-	config.device_remove("aux");
-	A2EAUX_FRANKLIN512(config, "aux", A2BUS_7M_CLOCK).set_onboard(m_a2eauxslot);
 
 	CENTRONICS(config, m_printer_conn, centronics_devices, "printer");
 	m_printer_conn->busy_handler().set(FUNC(apple2e_state::busy_w));
 	OUTPUT_LATCH(config, m_printer_out);
 	m_printer_conn->set_output_latch(*m_printer_out);
+
+	// The Ace 2000 series has 3 physical slots, 2, 4/7, and 5.
+	// 4/7 can be slot 4 or 7 via a jumper; we fix it to slot 7 here
+	// because that's most useful (for e.g. cffa2).
+	config.device_remove("sl1");
+	config.device_remove("sl2");
+	config.device_remove("sl3");
+	config.device_remove("sl4");
+	config.device_remove("sl5");
+	config.device_remove("sl6");
+	config.device_remove("sl7");
+
+	A2BUS_ACE2X00_SLOT1(config, "sl1", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
+	A2BUS_SLOT(config, "sl2", A2BUS_7M_CLOCK, m_a2bus, apple2e_cards, nullptr);
+	A2BUS_SLOT(config, "sl5", A2BUS_7M_CLOCK, m_a2bus, apple2e_cards, "mockingboard");
+	A2BUS_ACE2X00_SLOT6(config, "sl6", A2BUS_7M_CLOCK).set_onboard(m_a2bus);
+	A2BUS_SLOT(config, "sl7", A2BUS_7M_CLOCK, m_a2bus, apple2e_cards, nullptr);
+
+	config.device_remove("aux");
+	A2EAUX_FRANKLIN512(config, "aux", A2BUS_7M_CLOCK).set_onboard(m_a2eauxslot);
 
 	m_ram->set_default_size("128K");
 }
@@ -6333,11 +6365,11 @@ COMP( 1985, apple2eeuk, apple2e, 0,      apple2eepal,     apple2euk,  apple2e_st
 COMP( 1985, apple2eede, apple2e, 0,      apple2eepal,     apple2ede,  apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (enhanced, Germany)", MACHINE_SUPPORTS_SAVE )
 COMP( 1985, apple2eese, apple2e, 0,      apple2eepal,     apple2ese,  apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (enhanced, Sweden)", MACHINE_SUPPORTS_SAVE )
 COMP( 1985, apple2eefr, apple2e, 0,      apple2eepal,     apple2eefr, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (enhanced, France)", MACHINE_SUPPORTS_SAVE )
-COMP( 1987, apple2ep,   apple2e, 0,      apple2ep,        apple2epus, apple2e_state, empty_init,    "Apple Computer",                    "Apple //e (Platinum)", MACHINE_SUPPORTS_SAVE )
-COMP( 1987, apple2epuk, apple2e, 0,      apple2eppal,     apple2epuk, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, UK)", MACHINE_SUPPORTS_SAVE )
-COMP( 1987, apple2epde, apple2e, 0,      apple2eppal,     apple2epde, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, Germany)", MACHINE_SUPPORTS_SAVE )
-COMP( 1987, apple2epse, apple2e, 0,      apple2eppal,     apple2epse, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, Sweden)", MACHINE_SUPPORTS_SAVE )
-COMP( 1987, apple2epfr, apple2e, 0,      apple2eppal,     apple2epfr, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, France)", MACHINE_SUPPORTS_SAVE )
+COMP( 1987, apple2ep,   apple2e, 0,      apple2ee,        apple2epus, apple2e_state, empty_init,    "Apple Computer",                    "Apple //e (Platinum)", MACHINE_SUPPORTS_SAVE )
+COMP( 1987, apple2epuk, apple2e, 0,      apple2eepal,     apple2epuk, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, UK)", MACHINE_SUPPORTS_SAVE )
+COMP( 1987, apple2epde, apple2e, 0,      apple2eepal,     apple2epde, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, Germany)", MACHINE_SUPPORTS_SAVE )
+COMP( 1987, apple2epse, apple2e, 0,      apple2eepal,     apple2epse, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, Sweden)", MACHINE_SUPPORTS_SAVE )
+COMP( 1987, apple2epfr, apple2e, 0,      apple2eepal,     apple2epfr, apple2e_state, init_pal,      "Apple Computer",                    "Apple //e (Platinum, France)", MACHINE_SUPPORTS_SAVE )
 COMP( 1984, apple2c,    0,       apple2, apple2c,         apple2cus,  apple2e_state, empty_init,    "Apple Computer",                    "Apple //c" , MACHINE_SUPPORTS_SAVE )
 COMP( 1984, apple2cuk,  apple2c, 0,      apple2cpal,      apple2cuk,  apple2e_state, init_pal,      "Apple Computer",                    "Apple //c (UK)" , MACHINE_SUPPORTS_SAVE )
 COMP( 1984, apple2cde,  apple2c, 0,      apple2cpal,      apple2cde,  apple2e_state, init_pal,      "Apple Computer",                    "Apple //c (Germany)" , MACHINE_SUPPORTS_SAVE )

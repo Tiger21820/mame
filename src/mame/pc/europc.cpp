@@ -69,7 +69,7 @@ static void pc_dd_floppies(device_slot_interface &device)
 
 void europc_fdc_device::device_add_mconfig(machine_config &config)
 {
-	WD37C65C(config, m_fdc, 16_MHz_XTAL);
+	WD37C65B(config, m_fdc, 16_MHz_XTAL); // WD37C65BJM
 	m_fdc->intrq_wr_callback().set(FUNC(europc_fdc_device::irq_w));
 	m_fdc->drq_wr_callback().set(FUNC(europc_fdc_device::drq_w));
 	// single built-in 3.5" 720K drive, connector for optional external 3.5" or 5.25" drive
@@ -86,8 +86,8 @@ void europc_fdc_device::device_start()
 
 void europc_fdc_device::map(address_map &map)
 {
-	map(2, 2).w(m_fdc, FUNC(wd37c65c_device::dor_w));
-	map(4, 5).m(m_fdc, FUNC(wd37c65c_device::map));
+	map(2, 2).w(m_fdc, FUNC(wd37c65b_device::dor_w));
+	map(4, 5).m(m_fdc, FUNC(wd37c65b_device::map));
 	// TODO: DCR also decoded by JIM/BIGJIM
 }
 
@@ -436,10 +436,10 @@ void europc_pc_state::europc(machine_config &config)
 	kbd.kbclk_callback().set(m_mb, FUNC(pc_noppi_mb_device::keyboard_clock_w));
 	kbd.reset_callback().set(FUNC(europc_pc_state::reset_in_w));
 
-	ISA8_SLOT(config, "isa1", "mb:isa", pc_isa8_cards, "aga", false); // FIXME: determine ISA bus clock
-	ISA8_SLOT(config, "isa2", "mb:isa", pc_isa8_cards, "lpt", true);
-	ISA8_SLOT(config, "isa3", "mb:isa", pc_isa8_cards, "com", true);
-	ISA8_SLOT(config, "isa4", "mb:isa", europc_fdc, "fdc", true);
+	ISA8_SLOT(config, "isa1", 0, "mb:isa", pc_isa8_cards, "aga", false); // FIXME: determine ISA bus clock
+	ISA8_SLOT(config, "isa2", 0, "mb:isa", pc_isa8_cards, "lpt", true);
+	ISA8_SLOT(config, "isa3", 0, "mb:isa", pc_isa8_cards, "com", true);
+	ISA8_SLOT(config, "isa4", 0, "mb:isa", europc_fdc, "fdc", true);
 
 	M3002(config, m_rtc, 32.768_kHz_XTAL);
 
@@ -474,8 +474,8 @@ void europc_pc_state::euroxt(machine_config &config)
 	m_ram->set_default_size("768K");
 
 	subdevice<isa8_slot_device>("isa2")->set_default_option(nullptr);
-	ISA8_SLOT(config, "isa5", "mb:isa", pc_isa8_cards, "xtide", true); // FIXME: determine ISA bus clock
-	ISA8_SLOT(config, "isa6", "mb:isa", pc_isa8_cards, "lpt", true);
+	ISA8_SLOT(config, "isa5", 0, "mb:isa", pc_isa8_cards, "xtide", true); // FIXME: determine ISA bus clock
+	ISA8_SLOT(config, "isa6", 0, "mb:isa", pc_isa8_cards, "lpt", true);
 }
 
 ROM_START( europc )
