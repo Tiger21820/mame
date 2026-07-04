@@ -13,6 +13,8 @@
 
 #include "pc8001.h"
 
+#include "pc88_sdip.h"
+
 #include "bus/centronics/ctronics.h"
 #include "bus/msx/ctrl/ctrl.h"
 #include "bus/nec_fdd/pc80s31k.h"
@@ -259,18 +261,29 @@ class pc8801fh_state : public pc8801mk2sr_state
 public:
 	pc8801fh_state(const machine_config &mconfig, device_type type, const char *tag)
 		: pc8801mk2sr_state(mconfig, type, tag)
+		, m_eeprom(*this, "eeprom")
 		, m_opna(*this, "opna")
+		, m_setup_mem_view(*this, "setup_mem_view")
+		, m_setup_io_view(*this, "setup_io_view")
 	{ }
 
 	void pc8801fh(machine_config &config);
 
+	template <bool IS_DUMPED> void init_setup_mode();
+
 protected:
 	virtual void machine_start() override ATTR_COLD;
 	virtual void machine_reset() override ATTR_COLD;
+
+	virtual void main_map(address_map &map) override ATTR_COLD;
 	virtual void main_io(address_map &map) override ATTR_COLD;
 
+	bool m_has_setup_mode;
 private:
+	required_device<pc88_sdip_device> m_eeprom;
 	required_device<ym2608_device> m_opna;
+	memory_view m_setup_mem_view;
+	memory_view m_setup_io_view;
 	void opna_map(address_map &map) ATTR_COLD;
 
 	uint8_t cpuclock_r();
@@ -317,14 +330,18 @@ public:
 		: pc8801ma_state(mconfig, type, tag)
 		, m_cdrom_if(*this, "cdrom_if")
 		, m_cdrom_bios(*this, "cdrom_bios")
+		, m_memsw(*this, "memsw")
+		, m_memsw_view(*this, "memsw_view")
 	{ }
 
 	void pc8801mc(machine_config &config);
+	void init_pc8801mc();
 
 protected:
 	virtual void machine_start() override ATTR_COLD;
 	virtual void machine_reset() override ATTR_COLD;
 
+	virtual void main_map(address_map &map) override ATTR_COLD;
 	virtual void main_io(address_map &map) override ATTR_COLD;
 
 private:
@@ -333,6 +350,8 @@ private:
 
 	required_device<pc8801_31_device> m_cdrom_if;
 	required_region_ptr<u8> m_cdrom_bios;
+	required_device<pc8801mc_memsw_device> m_memsw;
+	memory_view m_memsw_view;
 
 	bool m_cdrom_bank = true;
 };
