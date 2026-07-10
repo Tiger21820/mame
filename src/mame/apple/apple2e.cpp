@@ -135,6 +135,7 @@ To enable mixed-case input and display on prav8c, enter the command "SETMOD 1" i
 #include "apple2video.h"
 #include "apple2common.h"
 #include "prav8ckb.h"
+#include "spectred_kbd.h"
 
 #include "cpu/m6502/m6502.h"
 #include "cpu/m6502/w65c02.h"
@@ -273,6 +274,7 @@ public:
 		m_isace500 = false;
 		m_isace2200 = false;
 		m_ace2200_axxx_bank = false;
+		m_isspectred = false;
 		m_pal = false;
 		m_cur_floppy = nullptr;
 		m_devsel = 0;
@@ -409,6 +411,7 @@ public:
 	void reset_w(int state);
 	void prav8c_kdata_w(u8 data);
 	void prav8c_kstrb_w(int state);
+	void spectred_kbdout_w(u8 data);
 	u8 memexp_r(offs_t offset);
 	void memexp_w(offs_t offset, u8 data);
 	u8 ace500_c0bx_r(offs_t offset);
@@ -445,7 +448,6 @@ public:
 	void laser128_map(address_map &map) ATTR_COLD;
 	void ace500_map(address_map &map) ATTR_COLD;
 	void ace2200_map(address_map &map) ATTR_COLD;
-	void spectred_keyb_map(address_map &map) ATTR_COLD;
 	void tk3000_keyb_map(address_map &map) ATTR_COLD;
 	void tk3000_keybio_map(address_map &map) ATTR_COLD;
 	void init_laser128() ATTR_COLD;
@@ -453,6 +455,7 @@ public:
 	void init_pal() ATTR_COLD;
 	void init_ace500() ATTR_COLD;
 	void init_ace2200() ATTR_COLD;
+	void init_spectred() ATTR_COLD;
 	void init_tk3000() ATTR_COLD;
 
 	bool m_35sel, m_hdsel, m_intdrive;
@@ -501,6 +504,9 @@ private:
 
 	bool m_isace500, m_isace2200, m_ace_cnxx_bank, m_ace2200_axxx_bank;
 	u16 m_ace500rombank;
+
+	bool m_isspectred;
+	u8 m_spectred_kbdout, m_spectred_kbdshift, m_spectred_kbctrl;
 
 	bool m_has_laser_mouse;
 	bool m_laser_fdc_on;
@@ -1118,6 +1124,10 @@ void apple2e_state::machine_start()
 	m_prav8c_kdata = 0;
 	m_prav8c_kstrb = true;
 
+	m_spectred_kbdout = 0xf0;
+	m_spectred_kbdshift = 0;
+	m_spectred_kbctrl = 0;
+
 	// setup save states
 	save_item(NAME(m_speaker_state));
 	save_item(NAME(m_cassette_state));
@@ -1135,6 +1145,12 @@ void apple2e_state::machine_start()
 		save_item(NAME(m_prav8c_kdata));
 		save_item(NAME(m_prav8c_kstrb));
 		save_item(NAME(m_prav8c_c060));
+	}
+	if (m_isspectred)
+	{
+		save_item(NAME(m_spectred_kbdout));
+		save_item(NAME(m_spectred_kbdshift));
+		save_item(NAME(m_spectred_kbctrl));
 	}
 	save_item(NAME(m_inh_slot));
 	save_item(NAME(m_inh_bank));
@@ -1363,6 +1379,11 @@ void apple2e_state::init_ace500()
 void apple2e_state::init_ace2200()
 {
 	m_isace2200 = true;
+}
+
+void apple2e_state::init_spectred()
+{
+	m_isspectred = true;
 }
 
 void apple2e_state::init_pal()
@@ -2187,6 +2208,8 @@ u8 apple2e_state::c000_r(offs_t offset)
 		case 0x69:
 			if (m_prav8c_kbd.found())
 				return (((m_gameio->has_sw0() && m_gameio->sw0_r()) || m_prav8c_kbd->sw0_r()) ? 0x80 : 0) | (m_prav8c_c060 & 0x40) | (uFloatingBus7 & 0x3f);
+			else if (m_isspectred)
+				return (((m_gameio->has_sw0() && m_gameio->sw0_r()) || BIT(m_spectred_kbctrl, 0)) ? 0x80 : 0) | uFloatingBus7;
 			else
 				return (((m_gameio->has_sw0() && m_gameio->sw0_r()) || (m_kbspecial->read() & 0x10)) ? 0x80 : 0) | uFloatingBus7;
 
@@ -2194,6 +2217,8 @@ u8 apple2e_state::c000_r(offs_t offset)
 		case 0x6a:
 			if (m_prav8c_kbd.found())
 				return (((m_gameio->has_sw1() && m_gameio->sw1_r()) || m_prav8c_kbd->sw1_r()) ? 0x80 : 0) | (m_prav8c_c060 & 0x40) | (uFloatingBus7 & 0x3f);
+			else if (m_isspectred)
+				return (((m_gameio->has_sw1() && m_gameio->sw1_r()) || BIT(m_spectred_kbctrl, 1)) ? 0x80 : 0) | uFloatingBus7;
 			else
 				return (((m_gameio->has_sw1() && m_gameio->sw1_r()) || (m_kbspecial->read() & 0x20)) ? 0x80 : 0) | uFloatingBus7;
 
@@ -3631,12 +3656,6 @@ void apple2e_state::ace2200_map(address_map &map)
 	map(0xc1c1, 0xc1c1).r(FUNC(apple2e_state::franklin_busy_r));
 }
 
-void apple2e_state::spectred_keyb_map(address_map &map)
-{
-	map(0x0000, 0x07ff).rom();
-	map(0x0800, 0x0fff).ram();
-}
-
 /***************************************************************************
     KEYBOARD
 ***************************************************************************/
@@ -3751,6 +3770,32 @@ void apple2e_state::prav8c_kstrb_w(int state)
 		m_strobe = 0x80;
 	}
 	m_prav8c_kstrb = bool(state);
+}
+
+void apple2e_state::spectred_kbdout_w(u8 data)
+{
+	if (BIT(data, 7) && !BIT(m_spectred_kbdout, 7))
+	{
+		m_transchar = m_spectred_kbdshift & 0x7f;
+		m_strobe = 0x80;
+	}
+
+	if (BIT(data, 4) && !BIT(m_spectred_kbdout, 4))
+	{
+		m_spectred_kbctrl = m_spectred_kbdshift & 0x0f;
+		m_anykeydown = BIT(m_spectred_kbctrl, 2);
+		reset_w(!BIT(m_spectred_kbctrl, 3));
+	}
+
+	// Convert serial to parallel
+	if (!BIT(data, 6) && BIT(m_spectred_kbdout, 6))
+	{
+		m_spectred_kbdshift >>= 1;
+		if (!BIT(m_spectred_kbdout, 5))
+			m_spectred_kbdshift |= 0x80;
+	}
+
+	m_spectred_kbdout = data;
 }
 
 /***************************************************************************
@@ -4699,7 +4744,7 @@ static INPUT_PORTS_START( tk3000 )
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( spectred )
-	PORT_INCLUDE( apple2e )
+	PORT_INCLUDE( apple2_sysconfig_accel )
 
 	PORT_START("kbd_lang_select")
 	PORT_CONFNAME(0xff, 0x00, "Character Set")
@@ -5168,12 +5213,13 @@ void apple2e_state::apple2eepal(machine_config &config)
 void apple2e_state::spectred(machine_config &config)
 {
 	apple2e(config);
-	i8035_device &keyb_mcu(I8035(config, "keyb_mcu", XTAL(4'000'000))); /* guessed frequency */
-	keyb_mcu.set_addrmap(AS_PROGRAM, &apple2e_state::spectred_keyb_map);
-	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::IIE, false, true>)));
 
-	// TODO: implement the actual interfacing to this 8035 MCU and
-	//       and then remove the keyb CPU inherited from apple2e
+	config.device_remove("ay3600");
+	config.device_remove("repttmr");
+
+	SPECTRED_KEYBOARD(config, "spectred_keyb").kbdout_callback().set(FUNC(apple2e_state::spectred_kbdout_w));
+
+	m_screen->set_screen_update(m_video, NAME((&a2_video_device::screen_update<a2_video_device::model::IIE, false, true>)));
 }
 
 void apple2e_state::tk3000_keyb_map(address_map &map)
@@ -5844,25 +5890,18 @@ ROM_START(apple2cfr)
 ROM_END
 
 ROM_START(spectred)
-		ROM_REGION(0x8000,"gfx1",0)
-		ROM_LOAD ( "spm-c_ed_06-08-85.u6", 0x0000, 0x4000, CRC(a1b9ffe4) SHA1(3cb281f19f91372e24685792b7bff778944f99ed) )
-		ROM_CONTINUE(0x0000, 0x4000)    // first half of this ROM is empty
+	ROM_REGION(0x8000,"gfx1",0)
+	ROM_LOAD ( "spm-c_ed_06-08-85.u6", 0x0000, 0x4000, CRC(a1b9ffe4) SHA1(3cb281f19f91372e24685792b7bff778944f99ed) )
+	ROM_CONTINUE(0x0000, 0x4000)    // first half of this ROM is empty
 
-		ROM_REGION(0x10000,"maincpu",0)
-		// these ROMs appear to have been dumped weirdly, or are wired weirdly in the real hardware.
-		// The first 0x2000 of u51 seems to be garbage
-		// u50 seems to have the halves duplicated, and D000 and E000 swapped
-		ROM_LOAD ( "spm-c_ed_51-09-86.u51.h", 0x0000, 0x4000, CRC(fae8d36c) SHA1(69bed61513482ccb578b89c2fb8e7ba2258e82a5))
-		ROM_COPY( "maincpu", 0x2000, 0x0000, 0x1000 )
-		ROM_LOAD ( "spm-c_ed_50-09-86.u50.h", 0x2000, 0x1000, CRC(1fccaf24) SHA1(1de1438ee8789f83cbc97f75c0485d1fd0f58a38))
-		ROM_CONTINUE(0x1000, 0x1000)
-		ROM_CONTINUE(0x4000, 0x2000)
-
-		ROM_REGION( 0x800, "keyboard", ROMREGION_ERASE00 )
-		ROM_LOAD( "342-0132-c.e12", 0x000, 0x800, BAD_DUMP CRC(e47045f4) SHA1(12a2e718f5f4acd69b6c33a45a4a940b1440a481) ) // copied from apple2e
-
-		ROM_REGION(0x1000, "keyb_mcu", 0)
-	ROM_LOAD( "167_8980.u5", 0x0000, 0x1000, CRC(a501f197) SHA1(136c2b562999a6e340fe0e9a3776cea8c2e3647e) )
+	ROM_REGION(0x10000,"maincpu",0)
+	// these ROMs appear to have been dumped weirdly, or are wired weirdly in the real hardware.
+	// The first 0x2000 of u51 seems to be garbage
+	// u50 seems to have the halves duplicated, and D000 and E000 swapped
+	ROM_LOAD ( "spm-c_ed_51-09-86.u51.h", 0x0000, 0x4000, CRC(fae8d36c) SHA1(69bed61513482ccb578b89c2fb8e7ba2258e82a5))
+	ROM_LOAD ( "spm-c_ed_50-09-86.u50.h", 0x2000, 0x1000, CRC(1fccaf24) SHA1(1de1438ee8789f83cbc97f75c0485d1fd0f58a38))
+	ROM_CONTINUE(0x4000, 0x2000)
+	ROM_CONTINUE(0x1000, 0x1000)
 ROM_END
 
 // unlike the very unique TK2000, the TK3000 is a mostly stock enhanced IIe clone
@@ -6087,7 +6126,7 @@ ROM_END
 
 ROM_START(laser128o)
 	ROM_REGION(0x2000,"gfx1",0)
-	ROM_LOAD("laser 128 video rom vt27-0706-0.bin", 0x0800, 0x0800, CRC(7884cc0f) SHA1(693a0a66191465825b8f7b5e746b463f3000e9cc))
+	ROM_LOAD("vt27-0430-0.bin", 0x0800, 0x0800, BAD_DUMP CRC(7884cc0f) SHA1(693a0a66191465825b8f7b5e746b463f3000e9cc)) // need to dump actual part
 	ROM_CONTINUE(0x0000, 0x0800) // international character set (how is this selected?)
 	ROM_CONTINUE(0x1000, 0x1000) // lo-res patterns, twice
 
@@ -6108,7 +6147,7 @@ ROM_START(laser128o)
 	ROMX_LOAD( "laser 128 860801.bin", 0x000000, 0x008000, CRC(a88c2fcf) SHA1(ec163bb6e7e07cb256e0ed0f8d148cf85313e9f9), ROM_BIOS(4) )
 
 	ROM_REGION( 0x800, "keyboard", ROMREGION_ERASE00 )
-	ROM_LOAD( "342-0132-c.e12", 0x000, 0x800, BAD_DUMP CRC(e47045f4) SHA1(12a2e718f5f4acd69b6c33a45a4a940b1440a481) ) // need to dump real laser rom
+	ROM_LOAD( "vt27-0431-0.bin", 0x000, 0x800, BAD_DUMP CRC(e47045f4) SHA1(12a2e718f5f4acd69b6c33a45a4a940b1440a481) ) // need to dump real laser rom
 ROM_END
 
 ROM_START(las128ex)
@@ -6372,7 +6411,7 @@ COMP( 1984, apple2cuk,  apple2c, 0,      apple2cpal,      apple2cuk,  apple2e_st
 COMP( 1984, apple2cde,  apple2c, 0,      apple2cpal,      apple2cde,  apple2e_state, init_pal,      "Apple Computer",                    "Apple //c (Germany)" , MACHINE_SUPPORTS_SAVE )
 COMP( 1984, apple2cse,  apple2c, 0,      apple2cpal,      apple2cse,  apple2e_state, init_pal,      "Apple Computer",                    "Apple //c (Sweden)" , MACHINE_SUPPORTS_SAVE )
 COMP( 1984, apple2cfr,  apple2c, 0,      apple2cpal,      apple2cfr,  apple2e_state, init_pal,      "Apple Computer",                    "Apple //c (France)" , MACHINE_SUPPORTS_SAVE )
-COMP( 1985?,spectred,   apple2e, 0,      spectred,        spectred,   apple2e_state, empty_init,    "Scopus/Spectrum",                   "Spectrum ED" , MACHINE_SUPPORTS_SAVE )
+COMP( 1985?,spectred,   apple2e, 0,      spectred,        spectred,   apple2e_state, init_spectred, "Scopus/Spectrum",                   "Spectrum ED" , MACHINE_SUPPORTS_SAVE )
 COMP( 1986, tk3000,     apple2e, 0,      tk3000,          tk3000,     apple2e_state, init_tk3000,   "Microdigital",                      "TK3000 //e" , MACHINE_SUPPORTS_SAVE )
 COMP( 1989, prav8c,     apple2e, 0,      prav8c,          prav8c,     apple2e_state, empty_init,    "Pravetz",                           "Pravetz 8C", MACHINE_NODEVICE_PRINTER | MACHINE_SUPPORTS_SAVE )
 COMP( 1987, laser128,   apple2c, 0,      laser128,        laser128,   apple2e_state, init_laser128, "Video Technology",                  "Laser 128", MACHINE_SUPPORTS_SAVE )
