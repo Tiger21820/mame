@@ -29933,8 +29933,8 @@ amspdwya
 
 @source:misc/amstarz80.cpp
 holddraw
-unkamst
-unkamsta
+holddrawa
+holddrawb
 
 @source:misc/amusco.cpp
 amusco
@@ -36125,6 +36125,7 @@ powerinsc
 powerinsj
 powerinspj
 powerinspu
+puzlwrld
 raphero
 rapheroa
 redfoxwp2
