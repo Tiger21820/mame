@@ -32,7 +32,7 @@
 #include "speaker.h"
 #include "screen.h"
 
-#include "formats/dsk_dsk.h"
+//#include "formats/dsk_dsk.h"
 #include "formats/msx_dsk.h"
 //#include "formats/p6001_cas.h"
 
@@ -45,6 +45,7 @@ public:
 		, m_maincpu(*this, "maincpu")
 		, m_ram(*this, "ram")
 		, m_ppi(*this, "ppi8255")
+		, m_gfx_view(*this, "gfx_view")
 		, m_screen(*this, "screen")
 		, m_joy(*this, "joy%u", 1U)
 		, m_joymux(*this, "joymux")
@@ -57,8 +58,8 @@ public:
 		, m_region_gfx1(*this, "gfx1")
 		, m_io_mode4_dsw(*this, "MODE4_DSW")
 		, m_kbd(*this, "kbd")
-		, m_cart_bank(*this, "cart_bank")
 		, m_palette(*this, "palette")
+		, m_cas_maxsize(0)
 	{ }
 
 	void system_latch_w(uint8_t data);
@@ -91,6 +92,7 @@ protected:
 	required_device<z80_device> m_maincpu;
 	required_device<ram_device> m_ram;
 	required_device<i8255_device> m_ppi;
+	memory_view m_gfx_view;
 	required_device<screen_device> m_screen;
 	required_device_array<msx_general_purpose_port_device, 2> m_joy;
 	required_device<ls157_x2_device> m_joymux;
@@ -103,7 +105,6 @@ protected:
 	required_memory_region m_region_gfx1;
 	required_ioport m_io_mode4_dsw;
 	required_device<pc6001_kbd_device> m_kbd;
-	optional_device<address_map_bank_device> m_cart_bank;
 	required_device<palette_device> m_palette;
 
 	uint8_t m_timer_irq_vector = 0;
@@ -139,11 +140,11 @@ protected:
 	uint8_t m_cas_data[0x18000];
 
 	// video functions
-	void draw_gfx_mode4(bitmap_ind16 &bitmap,const rectangle &cliprect,int attr);
-	void draw_bitmap_2bpp(bitmap_ind16 &bitmap,const rectangle &cliprect, int attr);
-	void draw_tile_3bpp(bitmap_ind16 &bitmap,const rectangle &cliprect,int x,int y,int tile,int attr);
-	void draw_tile_text(bitmap_ind16 &bitmap,const rectangle &cliprect,int x,int y,int tile,int attr,int has_mc6847);
-	void draw_border(bitmap_ind16 &bitmap,const rectangle &cliprect,int attr,int has_mc6847);
+	void draw_gfx_screen4(bitmap_ind16 &bitmap, const rectangle &cliprect, int x, int y, u8 tile, u8 attr, u8 col_setting);
+	void draw_gfx_2bpp(bitmap_ind16 &bitmap, const rectangle &cliprect, int x, int y, u8 tile, u8 attr);
+	void draw_tile_semi(bitmap_ind16 &bitmap, const rectangle &cliprect, int x, int y, u8 tile, u8 attr);
+	void draw_tile_text(bitmap_ind16 &bitmap, const rectangle &cliprect, int x, int y, u8 tile, u8 attr, int has_mc6847);
+	int get_border_pen(u8 attr, int has_mc6847);
 	void pc6001_screen_draw(bitmap_ind16 &bitmap,const rectangle &cliprect, int has_mc6847);
 
 	virtual rectangle get_screen_display_area();
@@ -152,7 +153,7 @@ protected:
 	emu_timer *m_timer_irq_timer = nullptr;
 	emu_timer *m_video_sync_timer = nullptr;
 	uint8_t *m_video_base = nullptr;
-//	std::unique_ptr<uint8_t[]> m_video_ram;
+//  std::unique_ptr<uint8_t[]> m_video_ram;
 
 	uint8_t m_sys_latch = 0;
 	uint8_t m_bank_opt = 0;
@@ -161,8 +162,6 @@ protected:
 	uint8_t m_port_c_8255 = 0;
 	uint8_t m_cur_keycode = 0;
 	uint8_t m_centronics_busy = 0;
-
-	void cart_map(address_map &map);
 
 private:
 	uint8_t m_joystick_out = 0xff;
@@ -195,6 +194,9 @@ private:
 	u8 m_irq_pending = 0;
 	u8 m_sub_vector = 0;
 	bool m_crtkill;
+
+	static constexpr int VDG_BORDER_X  = 32;
+	static constexpr int VDG_BORDER_Y  = 24;
 };
 
 class pc6001mk2_state : public pc6001_state
@@ -203,7 +205,6 @@ public:
 	pc6001mk2_state(const machine_config &mconfig, device_type type, const char *tag)
 		: pc6001_state(mconfig, type, tag)
 		, m_mk2_bank(*this, "mk2_bank_%u", 0U)
-		, m_gfx_view(*this, "gfx_view")
 		, m_basic_rom(*this, "basic_rom")
 		, m_tv_rom(*this, "tv_rom")
 		, m_voice_rom(*this, "voice_rom")
@@ -221,7 +222,6 @@ public:
 	void mk2_work_ram1_w(offs_t offset, uint8_t data);
 	void mk2_work_ram2_w(offs_t offset, uint8_t data);
 	void mk2_work_ram3_w(offs_t offset, uint8_t data);
-	void necmk2_ppi8255_w(offs_t offset, uint8_t data);
 	void mk2_system_latch_w(uint8_t data);
 	void mk2_vram_bank_w(uint8_t data);
 	void mk2_col_bank_w(uint8_t data);
@@ -239,7 +239,6 @@ protected:
 	void pc6001mk2_io(address_map &map) ATTR_COLD;
 
 	optional_device_array<address_map_bank_device, 4> m_mk2_bank;
-	memory_view m_gfx_view;
 
 	required_memory_region m_basic_rom;
 	required_memory_region m_tv_rom;

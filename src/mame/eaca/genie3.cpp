@@ -39,6 +39,7 @@
 ***************************************************************************/
 
 #include "emu.h"
+
 #include "bus/centronics/ctronics.h"
 #include "bus/rs232/rs232.h"
 #include "cpu/z80/z80.h"
@@ -48,8 +49,12 @@
 #include "machine/msm5832.h"
 #include "machine/wd_fdc.h"
 #include "video/mc6845.h"
+
 #include "emupal.h"
 #include "screen.h"
+#include "softlist_dev.h"
+
+#include "formats/dmk_dsk.h"
 
 
 namespace {
@@ -594,6 +599,7 @@ void genie3_state::floppy_formats(format_registration &fr)
 {
 	fr.add_fm_containers();
 	fr.add_mfm_containers();
+	fr.add(FLOPPY_DMK_FORMAT);
 }
 
 static void genie3_floppies(device_slot_interface &device)
@@ -720,6 +726,8 @@ void genie3_state::genie3(machine_config &config)
 	FLOPPY_CONNECTOR(config, "fdc2:3", genie3_floppies, nullptr, genie3_state::floppy_formats);
 
 	MSM5832(config, m_rtc, 32.768_kHz_XTAL);
+
+	SOFTWARE_LIST(config, "flop_list").set_original("genie3_flop");
 }
 
 
