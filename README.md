@@ -1,5 +1,5 @@
 # MAME
-fgjh
+
 ## What is MAME?
 
 MAME is a multi-purpose emulation framework.
