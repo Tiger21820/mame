@@ -830,6 +830,17 @@ void sat_console_state::saturn(machine_config &config)
 
 	SATURN_SCU(config, m_scu, MASTER_CLOCK_352);
 	m_scu->set_hostcpu(m_maincpu);
+	m_scu->main_dtack_cb().set_inputline(m_maincpu, INPUT_LINE_HALT);
+	m_scu->main_dtack_cb().append_inputline(m_slave, INPUT_LINE_HALT);
+	m_scu->sound_dtack_cb().set_inputline(m_audiocpu, INPUT_LINE_HALT);
+	m_scu->main_steal_cb().set([this] (u8 data) {
+		m_maincpu->adjust_icount(-data);
+		m_slave->adjust_icount(-data);
+	});
+	m_scu->sound_steal_cb().set([this] (u8 data) {
+		m_audiocpu->adjust_icount(-data);
+	});
+
 
 //  SH-1
 
@@ -856,11 +867,11 @@ void sat_console_state::saturn(machine_config &config)
 	NVRAM(config, "nvram").set_custom_handler(FUNC(sat_console_state::nvram_init));
 
 	/* video hardware */
-	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+	SCREEN(config, m_screen);
 	m_screen->set_raw(MASTER_CLOCK_320/8, 427, 0, 320, 263, 0, 224);
 	m_screen->set_screen_update(FUNC(sat_console_state::screen_update_vdp2));
 
-//	SATURN_VDP1(config, m_vdp1, MASTER_CLOCK_320);
+//  SATURN_VDP1(config, m_vdp1, MASTER_CLOCK_320);
 
 	SATURN_VDP2(config, m_vdp2, MASTER_CLOCK_320);
 	m_vdp2->set_screen_tag("screen");

@@ -467,6 +467,7 @@ quickjac
 sbsoli
 skattv
 skattva
+skattvs1
 trumpfas
 
 @source:adp/manohman.cpp
@@ -739,6 +740,9 @@ altos486
 
 @source:altos/altos586.cpp
 altos586
+
+@source:altos/altos8000.cpp
+poly201
 
 @source:altos/altos8600.cpp
 altos8600
@@ -1040,8 +1044,8 @@ a2000n
 a3000
 a3000n
 a4000
-a400030
-a400030n
+a4000_30
+a4000_30n
 a4000n
 a4000t
 a4000tn
@@ -1315,6 +1319,12 @@ macse
 macsefd
 unitron
 utrn1024
+
+@source:apple/maccatalyst.cpp
+pmac7200
+pmac7200_90
+pmac7200_100
+pmac7200_120
 
 @source:apple/macii.cpp
 mac2fdhd
@@ -17826,7 +17836,8 @@ chelnovjbl
 chelnovjbla
 chelnovu
 karnov
-karnova
+karnov5e
+karnov5u
 karnovj
 karnovjbl
 wndrplnt
@@ -18352,6 +18363,7 @@ mjelct3blb
 mjelctrb
 mjelctrn
 mjembase
+mjempror
 mjfriday
 mjreach
 mjreacha
@@ -19586,6 +19598,7 @@ anteatergg
 anteateruk
 aracnis
 aracnisa
+aracnisb
 armorcar
 armorcar2
 asideral
@@ -29345,6 +29358,7 @@ unkpacgd
 unksig
 unksiga
 unksigb
+unksigc
 
 @source:misc/a1supply.cpp
 tv21
@@ -32967,6 +32981,7 @@ pokerout
 policetr
 policetr10
 policetr11
+policetr12
 policetr13
 policetr13a
 policetr13b
@@ -33693,6 +33708,9 @@ mvme162
 
 @source:motorola/powerstack.cpp
 powerstk
+
+@source:motorola/startac70.cpp
+startac70
 
 @source:motorola/sys1121.cpp
 sys1121
@@ -39975,6 +39993,9 @@ rfsantafeg
 
 @source:regnecentralen/rc702.cpp
 rc702
+rc702mini
+rc702sem702
+rc703
 
 @source:regnecentralen/rc759.cpp
 rc759
@@ -40504,8 +40525,10 @@ kofxi
 kov7sprt
 maxspeed
 mslug6
+mirstad
 ngbc
 ngbcj
+prem11
 rangrmsn
 rumblef
 rumblef2
@@ -42898,6 +42921,7 @@ dcrown
 dcrowna
 gostop
 koikois
+koikoisa
 mayjinsn
 mayjisn2
 nratechu
@@ -44134,6 +44158,7 @@ sb8085
 sbrain
 sagafox
 sagafoxf80
+sist600
 
 @source:skeleton/scopus.cpp
 sagitta180
@@ -47397,6 +47422,9 @@ crei680
 @source:trainer/cvicny.cpp
 cvicny
 
+@source:trainer/dgp80.cpp
+dgp80
+
 @source:trainer/dolphunk.cpp
 dauphin
 
@@ -47485,6 +47513,7 @@ tanodr64h
 
 @source:trs/lnw80.cpp
 lnw80
+mxcomp
 
 @source:trs/max80.cpp
 max80
@@ -47529,6 +47558,7 @@ trs80m3
 trs80m4
 trs80m4p
 cp500
+naja800
 
 @source:trs/vis.cpp
 vis
@@ -48929,6 +48959,7 @@ miprimlec
 
 @source:vtech/glcx.cpp
 bs9009cx
+cbcomm
 gl6600cx
 gl8008cx
 gtbmcx
@@ -49088,13 +49119,6 @@ t7000
 
 @source:wicat/wicat.cpp
 wicat
-
-@source:wing/luckgrln.cpp
-7smash
-7smasha
-luckgrln
-luckstrn
-luckstrna
 
 @source:williams/atlantis.cpp
 mwskins
@@ -49432,6 +49456,16 @@ zero2
 
 @source:williams/wmg.cpp
 wmg
+
+@source:wing/eagle_9619b.cpp
+trfruits
+
+@source:wing/luckgrln.cpp
+7smash
+7smasha
+luckgrln
+luckstrn
+luckstrna
 
 @source:wing/lucky37.cpp
 bingo75
