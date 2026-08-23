@@ -77,21 +77,6 @@
 
 */
 
-/*
-
-    TODO:
-
-    - keyboard ROM is not dumped
-    - MPSC
-		- CRC
-		- PAR OVR CRC
-		- LINE OFF
-		- DMA is not implemented in z80sio.cpp
-    - CRTC186 video using CRT9007
-    - IOE186 card
-
-*/
-
 #include "emu.h"
 #include "bus/mm2/exp.h"
 #include "bus/rs232/rs232.h"
@@ -269,17 +254,6 @@ void mm2_state::machine_start()
 {
 	m_mpsc->synca_w(1);
 
-	u8 *rom = memregion(I80186_TAG)->base();
-
-	// patch out ROM checksum validation
-	rom[0x051c] = 0x90;
-	rom[0x051d] = 0x90;
-
-	// patch out MPSC test which fails due to missing DMA and interrupts
-	rom[0x1cf8] = 0x90;
-	rom[0x1cf9] = 0x90;
-	rom[0x1cfa] = 0x90;
-
 	// state saving
 	save_item(NAME(m_cls0));
 	save_item(NAME(m_cls1));
@@ -315,8 +289,8 @@ void mm2_state::mm2(machine_config &config)
 
 	I8274(config, m_mpsc, XTAL(16'000'000)/4);
 	m_mpsc->out_int_callback().set(m_pic, FUNC(pic8259_device::ir1_w));
-	m_mpsc->out_txdrqa_callback().set(m_maincpu, FUNC(i80186_cpu_device::drq0_w));
-	m_mpsc->out_rxdrqa_callback().set(m_maincpu, FUNC(i80186_cpu_device::drq1_w));
+	m_mpsc->out_txdrqa_callback().set(m_maincpu, FUNC(i80186_cpu_device::drq1_w));
+	m_mpsc->out_rxdrqa_callback().set(m_maincpu, FUNC(i80186_cpu_device::drq0_w));
 	m_mpsc->out_txda_callback().set(FUNC(mm2_state::mpsc_txda_w));
 	m_mpsc->out_rtsa_callback().set(FUNC(mm2_state::mpsc_rtsa_w));
 	m_mpsc->out_txdb_callback().set(FUNC(mm2_state::mpsc_txdb_w));

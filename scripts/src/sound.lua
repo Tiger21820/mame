@@ -12,6 +12,8 @@
 files {
 	MAME_DIR .. "src/devices/sound/bbd.cpp",
 	MAME_DIR .. "src/devices/sound/bbd.h",
+	MAME_DIR .. "src/devices/sound/drivesound.cpp",
+	MAME_DIR .. "src/devices/sound/drivesound.h",
 	MAME_DIR .. "src/devices/sound/flt_biquad.cpp",
 	MAME_DIR .. "src/devices/sound/flt_biquad.h",
 	MAME_DIR .. "src/devices/sound/flt_vol.cpp",
@@ -1984,5 +1986,17 @@ if SOUNDS["L6009"] then
 	files {
 		MAME_DIR .. "src/devices/sound/l6009.cpp",
 		MAME_DIR .. "src/devices/sound/l6009.h",
+	}
+end
+
+---------------------------------------------------
+--
+--@src/devices/sound/gt913.h,SOUNDS["GT913"] = true
+---------------------------------------------------
+
+if SOUNDS["GT913"] then
+	files {
+		MAME_DIR .. "src/devices/sound/gt913.cpp",
+		MAME_DIR .. "src/devices/sound/gt913.h",
 	}
 end
