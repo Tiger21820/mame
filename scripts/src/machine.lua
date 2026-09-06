@@ -3376,6 +3376,18 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/machine/s35180.h,MACHINES["S35180"] = true
+---------------------------------------------------
+
+if MACHINES["S35180"] then
+	files {
+		MAME_DIR .. "src/devices/machine/s35180.cpp",
+		MAME_DIR .. "src/devices/machine/s35180.h",
+	}
+end
+
+---------------------------------------------------
+--
 --@src/devices/machine/s3520cf.h,MACHINES["S3520CF"] = true
 ---------------------------------------------------
 
@@ -5506,6 +5518,17 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/machine/unihammer.h,MACHINES["UNIHAMMER"] = true
+---------------------------------------------------
+if MACHINES["UNIHAMMER"] then
+	files {
+		MAME_DIR .. "src/devices/machine/unihammer.cpp",
+		MAME_DIR .. "src/devices/machine/unihammer.h",
+	}
+end
+
+---------------------------------------------------
+--
 --@src/devices/machine/ns32382.h,MACHINES["NS32382"] = true
 ---------------------------------------------------
 if MACHINES["NS32382"] then
@@ -5714,5 +5737,17 @@ if MACHINES["QUADMOUSE"] then
 	files {
 		MAME_DIR .. "src/devices/machine/quadmouse.cpp",
 		MAME_DIR .. "src/devices/machine/quadmouse.h",
+	}
+end
+
+---------------------------------------------------
+--
+--@src/devices/machine/at_ssrt.h,MACHINES["AT_SSRT"] = true
+---------------------------------------------------
+
+if MACHINES["AT_SSRT"] then
+	files {
+		MAME_DIR .. "src/devices/machine/at_ssrt.cpp",
+		MAME_DIR .. "src/devices/machine/at_ssrt.h",
 	}
 end
